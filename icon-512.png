@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#f5ede0"/>
+  <rect x="44" y="36" width="104" height="128" rx="12" fill="#fff8f0" stroke="#e8d5c0" stroke-width="2"/>
+  <line x1="60" y1="72" x2="132" y2="72" stroke="#c9845a" stroke-width="4" stroke-linecap="round"/>
+  <line x1="60" y1="92" x2="132" y2="92" stroke="#e8d5c0" stroke-width="3" stroke-linecap="round"/>
+  <line x1="60" y1="110" x2="110" y2="110" stroke="#e8d5c0" stroke-width="3" stroke-linecap="round"/>
+  <line x1="60" y1="128" x2="120" y2="128" stroke="#e8d5c0" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="96" cy="54" r="10" fill="#c9845a" opacity="0.3"/>
+  <text x="96" y="59" text-anchor="middle" font-size="14" fill="#c9845a" font-family="serif">日</text>
+</svg>

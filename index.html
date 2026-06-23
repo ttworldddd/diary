@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f5ede0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="日记">
+<link rel="manifest" href="manifest.json">
+<title>日记</title>
+<style>
+:root {
+  --bg:#fdf6ee; --bg2:#f5ede0; --bg3:#efe0cc;
+  --card:#fff8f0;
+  --accent:#c9845a; --accent2:#e8a87c; --accent-light:#faebd7;
+  --green:#6aab72; --green-light:#eaf5eb;
+  --blue:#6a90c9; --blue-light:#eaf0fb;
+  --text:#3d2b1f; --text2:#7a5c4a; --text3:#b08a72;
+  --border:#e8d5c0; --border2:#d4b896;
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 2px 12px rgba(120,70,30,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overscroll-behavior:none;}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:14px 20px;}
+.topbar-title{font-size:18px;font-weight:600;color:var(--accent);letter-spacing:.02em;cursor:pointer;}
+.topbar-actions{display:flex;gap:10px;align-items:center;}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:20px;transition:background .15s;}
+.icon-btn:active{background:var(--bg3);}
+
+/* views */
+.view{display:none;flex-direction:column;min-height:calc(100vh - 57px);}
+.view.active{display:flex;}
+.scroll-view{overflow-y:auto;flex:1;}
+
+/* list */
+#view-list{padding:16px;gap:12px;}
+.list-header{display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px;}
+.list-header-text{font-size:13px;color:var(--text3);}
+.new-btn{display:flex;align-items:center;gap:8px;background:var(--accent);color:white;border:none;border-radius:50px;padding:12px 22px;font-size:15px;font-weight:500;cursor:pointer;box-shadow:0 3px 10px rgba(180,100,60,.25);transition:transform .1s,box-shadow .1s;width:100%;justify-content:center;}
+.new-btn:active{transform:scale(.97);}
+.diary-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;cursor:pointer;transition:transform .1s;box-shadow:var(--shadow);}
+.diary-card:active{transform:scale(.98);}
+.diary-card-date{font-size:12px;color:var(--text3);margin-bottom:6px;}
+.diary-card-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px;}
+.diary-card-preview{font-size:13px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.diary-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:6px;flex-wrap:wrap;}
+.diary-card-reader{font-size:11px;color:var(--accent2);background:var(--accent-light);padding:2px 8px;border-radius:20px;}
+.diary-card-badges{display:flex;gap:6px;}
+.badge-small{font-size:11px;padding:2px 8px;border-radius:20px;}
+.badge-green{background:var(--green-light);color:var(--green);}
+.badge-blue{background:var(--blue-light);color:var(--blue);}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px;color:var(--text3);}
+.empty-icon{font-size:52px;opacity:.5;}
+.empty-text{font-size:15px;text-align:center;line-height:1.7;}
+
+/* write */
+#view-write{padding:0;}
+.write-inner{display:flex;flex-direction:column;flex:1;padding:20px 20px 0;}
+.write-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.write-date{font-size:13px;color:var(--text3);}
+.reader-picker{display:flex;gap:8px;}
+.reader-chip{font-size:12px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;}
+.reader-chip.active{background:var(--accent);border-color:var(--accent);color:white;}
+.title-input{font-size:22px;font-weight:600;color:var(--text);border:none;background:transparent;outline:none;width:100%;margin-bottom:14px;font-family:inherit;}
+.title-input::placeholder{color:var(--text3);}
+.divider{height:1px;background:var(--border);margin-bottom:14px;}
+.editor-toolbar{display:flex;align-items:center;gap:4px;padding:6px 0 10px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap;}
+.tb-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;transition:background .12s;}
+.tb-btn:active,.tb-btn.pressed{background:var(--bg3);color:var(--accent);}
+.tb-sep{width:1px;height:20px;background:var(--border);margin:0 4px;}
+.editor-area{flex:1;min-height:240px;outline:none;font-size:16px;line-height:1.85;color:var(--text);word-break:break-word;}
+.editor-area:empty::before{content:attr(data-placeholder);color:var(--text3);pointer-events:none;}
+.editor-area img{max-width:100%;border-radius:var(--radius-sm);margin:8px 0;display:block;}
+.submit-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:12px 20px 20px;display:flex;gap:10px;}
+.submit-btn{flex:1;padding:14px;background:var(--accent);color:white;border:none;border-radius:50px;font-size:16px;font-weight:500;cursor:pointer;transition:transform .1s;}
+.submit-btn:active{transform:scale(.97);}
+.save-draft-btn{padding:14px 18px;background:transparent;color:var(--text2);border:1.5px solid var(--border2);border-radius:50px;font-size:14px;cursor:pointer;}
+
+/* detail */
+#view-detail{overflow-y:auto;}
+.detail-inner{padding:20px;display:flex;flex-direction:column;gap:14px;}
+.detail-date{font-size:13px;color:var(--text3);}
+.detail-title{font-size:24px;font-weight:600;color:var(--text);}
+.detail-body{font-size:16px;line-height:1.85;color:var(--text);}
+.detail-body img{max-width:100%;border-radius:var(--radius-sm);margin:8px 0;}
+
+/* ai cards */
+.ai-section{display:flex;flex-direction:column;gap:12px;margin-top:4px;}
+.ai-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+.ai-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.ai-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.ai-avatar.green{background:var(--green-light);}
+.ai-avatar.blue{background:var(--blue-light);}
+.ai-card-title{font-size:14px;font-weight:500;color:var(--accent);}
+.ai-card-title.green{color:var(--green);}
+.ai-card-title.blue{color:var(--blue);}
+.ai-card-sub{font-size:11px;color:var(--text3);}
+.ai-body{font-size:15px;line-height:1.85;color:var(--text2);white-space:pre-wrap;}
+.ai-loading{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text3);}
+.dots span{display:inline-block;width:6px;height:6px;background:var(--accent2);border-radius:50%;margin:0 2px;animation:bounce 1.2s infinite;}
+.dots span:nth-child(2){animation-delay:.2s;}
+.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-6px);}}
+
+/* extract items */
+.extract-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.extract-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);}
+.extract-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;}
+.extract-item.blue-check input[type=checkbox]{accent-color:var(--blue);}
+.extract-item-text{flex:1;font-size:14px;color:var(--text);}
+.extract-item-meta{font-size:12px;color:var(--text3);white-space:nowrap;}
+.extract-confirm-btn{margin-top:10px;width:100%;padding:10px;background:var(--accent);color:white;border:none;border-radius:50px;font-size:14px;cursor:pointer;font-family:inherit;}
+.extract-confirm-btn.green{background:var(--green);}
+.extract-confirm-btn.blue{background:var(--blue);}
+.extract-confirm-btn:active{opacity:.85;}
+.extract-done{font-size:13px;color:var(--text3);text-align:center;padding:4px 0;}
+
+/* ledger */
+#view-ledger{overflow-y:auto;}
+.ledger-inner{padding:20px;display:flex;flex-direction:column;gap:16px;}
+.summary-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;}
+.summary-card .sc-label{font-size:11px;color:var(--text3);margin-bottom:4px;}
+.summary-card .sc-val{font-size:20px;font-weight:600;color:var(--accent);}
+.summary-card .sc-val.green{color:var(--green);}
+.summary-card .sc-val.red{color:#c0705a;}
+.month-group{display:flex;flex-direction:column;gap:8px;}
+.month-label{font-size:12px;color:var(--text3);font-weight:500;padding:2px 0;}
+.ledger-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.ledger-item-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.ledger-item-icon.expense{background:var(--accent-light);}
+.ledger-item-icon.income{background:var(--green-light);}
+.ledger-item-info{flex:1;}
+.ledger-item-name{font-size:14px;color:var(--text);font-weight:500;}
+.ledger-item-date{font-size:11px;color:var(--text3);margin-top:2px;}
+.ledger-item-amount{font-size:16px;font-weight:600;}
+.ledger-item-amount.expense{color:var(--accent);}
+.ledger-item-amount.income{color:var(--green);}
+.ledger-item-del{color:var(--text3);background:none;border:none;font-size:18px;cursor:pointer;padding:4px;}
+
+/* manual add ledger */
+.add-row{display:flex;gap:8px;align-items:center;}
+.add-input{flex:1;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);outline:none;font-family:inherit;}
+.add-input::placeholder{color:var(--text3);}
+.add-btn{padding:10px 18px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.type-toggle{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;}
+.type-toggle button{flex:1;padding:10px 0;font-size:13px;border:none;background:transparent;cursor:pointer;color:var(--text2);font-family:inherit;}
+.type-toggle button.active{background:var(--accent);color:white;}
+.type-toggle button.income.active{background:var(--green);}
+
+/* plans */
+#view-plans{overflow-y:auto;}
+.plans-inner{padding:20px;display:flex;flex-direction:column;gap:16px;}
+.plan-section{display:flex;flex-direction:column;gap:8px;}
+.plan-section-label{font-size:12px;color:var(--text3);font-weight:500;}
+.plan-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:flex-start;gap:12px;}
+.plan-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue);flex-shrink:0;margin-top:2px;cursor:pointer;}
+.plan-item-body{flex:1;}
+.plan-item-text{font-size:14px;color:var(--text);line-height:1.5;}
+.plan-item-text.done{text-decoration:line-through;color:var(--text3);}
+.plan-item-meta{font-size:11px;color:var(--text3);margin-top:3px;}
+.plan-item-del{color:var(--text3);background:none;border:none;font-size:18px;cursor:pointer;padding:4px;}
+
+/* settings */
+#view-settings{overflow-y:auto;}
+.settings-inner{padding:20px;display:flex;flex-direction:column;gap:20px;}
+.settings-section{margin-bottom:0;}
+.settings-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.settings-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);}
+.settings-row:last-child{border-bottom:none;}
+.settings-row-label{font-size:15px;color:var(--text);}
+.settings-row-value{font-size:14px;color:var(--text3);}
+.settings-input{flex:1;margin-left:12px;background:transparent;border:none;outline:none;font-size:14px;color:var(--text2);text-align:right;font-family:inherit;}
+.settings-input::placeholder{color:var(--text3);}
+.reader-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.reader-option{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 10px;cursor:pointer;text-align:center;transition:all .15s;}
+.reader-option.active{border-color:var(--accent);background:var(--accent-light);}
+.reader-option .ro-icon{font-size:28px;margin-bottom:6px;}
+.reader-option .ro-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;}
+.reader-option .ro-desc{font-size:11px;color:var(--text3);line-height:1.5;}
+
+/* bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--bg);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 12px;cursor:pointer;color:var(--text3);transition:color .15s;border:none;background:transparent;font-family:inherit;}
+.nav-item.active{color:var(--accent);}
+.nav-item svg{width:22px;height:22px;margin-bottom:3px;}
+.nav-item span{font-size:11px;}
+.main-content{padding-bottom:72px;}
+#img-input,#camera-input{display:none;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(60,35,15,.85);color:white;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <div class="topbar-title" id="topbar-title">我的日记</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="showView('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="main-content">
+
+<!-- LIST -->
+<div class="view active" id="view-list">
+  <div style="padding:16px;display:flex;flex-direction:column;gap:12px;flex:1;">
+    <div class="list-header"><span class="list-header-text" id="diary-count">0 篇日记</span></div>
+    <button class="new-btn" onclick="startNewDiary()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      写今天的日记
+    </button>
+    <div id="diary-list" style="display:flex;flex-direction:column;gap:10px;flex:1;"></div>
+  </div>
+</div>
+
+<!-- WRITE -->
+<div class="view" id="view-write">
+  <div class="write-inner">
+    <div class="write-meta">
+      <span class="write-date" id="write-date"></span>
+      <div class="reader-picker">
+        <button class="reader-chip active" data-reader="nuanjiang" onclick="selectReader(this)">暖姜</button>
+        <button class="reader-chip" data-reader="subai" onclick="selectReader(this)">素白</button>
+        <button class="reader-chip" data-reader="mingjing" onclick="selectReader(this)">明镜</button>
+      </div>
+    </div>
+    <input type="text" class="title-input" id="title-input" placeholder="今天的标题（可不填）" maxlength="60">
+    <div class="divider"></div>
+    <div class="editor-toolbar">
+      <button class="tb-btn" onclick="execCmd('bold')"><b>B</b></button>
+      <button class="tb-btn" onclick="execCmd('italic')"><i>I</i></button>
+      <button class="tb-btn" onclick="execCmd('underline')"><u>U</u></button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" onclick="execCmd('insertUnorderedList')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button class="tb-btn" onclick="insertQuote()">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
+      </button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" onclick="triggerImgPick()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </button>
+      <button class="tb-btn" onclick="triggerCamera()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+    </div>
+    <div class="editor-area" id="editor" contenteditable="true" data-placeholder="今天发生了什么，此刻你在想什么……" spellcheck="false"></div>
+  </div>
+  <div class="submit-bar">
+    <button class="save-draft-btn" onclick="saveDraft()">存草稿</button>
+    <button class="submit-btn" onclick="submitDiary()">完成，让读者看看</button>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div class="view" id="view-detail">
+  <div class="detail-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="detail-date" id="detail-date"></div>
+      <button class="icon-btn" onclick="deleteCurrentDiary()" style="color:#c0705a;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>
+    <div class="detail-title" id="detail-title"></div>
+    <div class="detail-body" id="detail-body"></div>
+    <div class="ai-section" id="ai-section"></div>
+  </div>
+</div>
+
+<!-- LEDGER -->
+<div class="view" id="view-ledger">
+  <div class="ledger-inner">
+    <div class="summary-row">
+      <div class="summary-card"><div class="sc-label">本月支出</div><div class="sc-val red" id="month-expense">¥0</div></div>
+      <div class="summary-card"><div class="sc-label">本月收入</div><div class="sc-val green" id="month-income">¥0</div></div>
+      <div class="summary-card"><div class="sc-label">结余</div><div class="sc-val" id="month-balance">¥0</div></div>
+    </div>
+    <!-- manual add -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="type-toggle">
+        <button class="active" id="type-expense" onclick="setLedgerType('expense')">支出</button>
+        <button class="income" id="type-income" onclick="setLedgerType('income')">收入</button>
+      </div>
+      <div class="add-row">
+        <input class="add-input" id="ledger-name-input" placeholder="项目名称" maxlength="30">
+        <input class="add-input" id="ledger-amount-input" placeholder="金额" type="number" min="0" style="width:90px;flex:none;">
+        <button class="add-btn" onclick="addLedgerManual()">添加</button>
+      </div>
+    </div>
+    <div id="ledger-list"></div>
+  </div>
+</div>
+
+<!-- PLANS -->
+<div class="view" id="view-plans">
+  <div class="plans-inner">
+    <div class="add-row">
+      <input class="add-input" id="plan-input" placeholder="手动添加一条计划……" maxlength="60">
+      <button class="add-btn" style="background:var(--blue);" onclick="addPlanManual()">添加</button>
+    </div>
+    <div id="plan-list"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="view" id="view-settings">
+  <div class="settings-inner">
+    <div class="settings-section">
+      <div class="settings-label">AI 读者</div>
+      <div class="reader-selector">
+        <div class="reader-option active" data-reader="nuanjiang" onclick="setDefaultReader(this)">
+          <div class="ro-icon">🍵</div><div class="ro-name">暖姜</div><div class="ro-desc">温柔反馈，捕捉情绪细节</div>
+        </div>
+        <div class="reader-option" data-reader="subai" onclick="setDefaultReader(this)">
+          <div class="ro-icon">🌙</div><div class="ro-name">素白</div><div class="ro-desc">安静陪伴，留白，不打扰</div>
+        </div>
+        <div class="reader-option" data-reader="mingjing" onclick="setDefaultReader(this)">
+          <div class="ro-icon">🔍</div><div class="ro-name">明镜</div><div class="ro-desc">好奇提问，推动你深想</div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">DeepSeek API</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-row-label">API Key</span>
+          <input type="password" class="settings-input" id="api-key-input" placeholder="sk-..." autocomplete="off">
+        </div>
+        <div class="settings-row"><span class="settings-row-label">模型</span><span class="settings-row-value">deepseek-chat</span></div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text3);line-height:1.7;padding:0 2px;">API Key 仅保存在本设备，不会上传。</div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label">数据</div>
+      <div class="settings-card">
+        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.0.0</span></div>
+        <div class="settings-row" style="cursor:pointer;" onclick="exportDiaries()">
+          <span class="settings-row-label">导出所有日记</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="settings-row" style="cursor:pointer;color:#c0705a;" onclick="confirmClearAll()">
+          <span class="settings-row-label" style="color:#c0705a;">清除所有数据</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main-content -->
+
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-list" onclick="showView('list')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M3 15h18M3 3h18M3 21h18"/></svg>
+    <span>日记</span>
+  </button>
+  <button class="nav-item" id="nav-write" onclick="startNewDiary()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span>写日记</span>
+  </button>
+  <button class="nav-item" id="nav-ledger" onclick="showView('ledger')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    <span>账本</span>
+  </button>
+  <button class="nav-item" id="nav-plans" onclick="showView('plans')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span>计划</span>
+  </button>
+  <button class="nav-item" id="nav-settings" onclick="showView('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>设置</span>
+  </button>
+</nav>
+
+<input type="file" id="img-input" accept="image/*" multiple onchange="handleImgPick(event)">
+<input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleImgPick(event)">
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DB =====
+let db;
+const DB_NAME = 'diary_db', DB_VER = 2;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('diaries')) {
+        const s = d.createObjectStore('diaries', { keyPath: 'id' });
+        s.createIndex('date', 'date', { unique: false });
+      }
+      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
+      if (!d.objectStoreNames.contains('ledger')) d.createObjectStore('ledger', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('plans')) d.createObjectStore('plans', { keyPath: 'id' });
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+function dbGet(s, k) { return new Promise((r,j) => { const t=db.transaction(s,'readonly'),q=t.objectStore(s).get(k); q.onsuccess=()=>r(q.result); q.onerror=()=>j(q.error); }); }
+function dbPut(s, v) { return new Promise((r,j) => { const t=db.transaction(s,'readwrite'),q=t.objectStore(s).put(v); q.onsuccess=()=>r(q.result); q.onerror=()=>j(q.error); }); }
+function dbDelete(s, k) { return new Promise((r,j) => { const t=db.transaction(s,'readwrite'),q=t.objectStore(s).delete(k); q.onsuccess=()=>r(); q.onerror=()=>j(q.error); }); }
+function dbGetAll(s) { return new Promise((r,j) => { const t=db.transaction(s,'readonly'),q=t.objectStore(s).getAll(); q.onsuccess=()=>r(q.result); q.onerror=()=>j(q.error); }); }
+
+// ===== STATE =====
+let currentView = 'list';
+let currentDiaryId = null;
+let currentReader = 'nuanjiang';
+let ledgerAddType = 'expense';
+let settings = {};
+
+const READERS = {
+  nuanjiang: { name:'暖姜', role:'温柔读者', icon:'🍵',
+    prompt:`你是"暖姜"，一位温柔细腻的日记读者。你刚刚读完了这篇日记，请给出你的回应。
+风格：善于捕捉文字背后的情绪细节，用温暖的语言反映给作者；不给建议，不评判，只是真诚地说出你读到了什么；语言温柔，不过度热情，像一个真正在意对方的朋友；回应150-250字，自然流动，不要分点；用第二人称"你"称呼作者。` },
+  subai: { name:'素白', role:'安静读者', icon:'🌙',
+    prompt:`你是"素白"，一位安静的日记读者。你刚刚读完了这篇日记，请给出你的回应。
+风格：克制，留白，不说太多；只说最触动你的一两处，简短而真实；不问问题，不给建议，像月光一样安静地在那里；回应60-100字，有留白感；用第二人称"你"称呼作者。` },
+  mingjing: { name:'明镜', role:'好奇读者', icon:'🔍',
+    prompt:`你是"明镜"，一位充满好奇的日记读者。你刚刚读完了这篇日记，请给出你的回应。
+风格：先一两句说出你读到了什么；然后问作者一两个真诚的问题，帮助继续深入思考；问题要有针对性，是真的在认真读之后产生的好奇；语气温和真诚；回应120-180字；用第二人称"你"称呼作者。` }
+};
+
+// ===== VIEWS =====
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.getElementById('nav-' + name);
+  if (nav) nav.classList.add('active');
+  currentView = name;
+  const titles = { list:'我的日记', write:'写日记', detail:'日记', ledger:'账本', plans:'计划', settings:'设置' };
+  document.getElementById('topbar-title').textContent = titles[name] || '日记';
+  if (name === 'list') loadDiaryList();
+  if (name === 'settings') loadSettings();
+  if (name === 'ledger') loadLedger();
+  if (name === 'plans') loadPlans();
+}
+
+// ===== LIST =====
+async function loadDiaryList() {
+  const diaries = (await dbGetAll('diaries')).sort((a,b) => b.createdAt - a.createdAt);
+  document.getElementById('diary-count').textContent = diaries.length + ' 篇日记';
+  const list = document.getElementById('diary-list');
+  if (!diaries.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📖</div><div class="empty-text">还没有日记<br>点上方按钮开始写第一篇</div></div>`;
+    return;
+  }
+  list.innerHTML = diaries.map(d => {
+    const r = READERS[d.reader] || READERS.nuanjiang;
+    const preview = stripHtml(d.body).slice(0, 80);
+    const imgCount = (d.body.match(/<img/g) || []).length;
+    const hasLedger = d.ledgerExtracted && d.aiLedger?.length > 0;
+    const hasPlans = d.plansExtracted && d.aiPlans?.length > 0;
+    return `<div class="diary-card" onclick="openDiary('${d.id}')">
+      <div class="diary-card-date">${formatDateFull(d.createdAt)}</div>
+      <div class="diary-card-title">${escHtml(d.title) || '无标题'}</div>
+      ${preview ? `<div class="diary-card-preview">${escHtml(preview)}</div>` : ''}
+      <div class="diary-card-footer">
+        <span class="diary-card-reader">${r.icon} ${r.name}</span>
+        <div class="diary-card-badges">
+          ${imgCount > 0 ? `<span class="badge-small" style="background:var(--bg3);color:var(--text3);">${imgCount}图</span>` : ''}
+          ${hasLedger ? `<span class="badge-small badge-green">账</span>` : ''}
+          ${hasPlans ? `<span class="badge-small badge-blue">计划</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== WRITE =====
+function startNewDiary() {
+  currentDiaryId = null;
+  document.getElementById('title-input').value = '';
+  document.getElementById('editor').innerHTML = '';
+  document.getElementById('write-date').textContent = formatDateFull(Date.now());
+  selectReaderByName(settings.defaultReader || 'nuanjiang');
+  showView('write');
+  setTimeout(() => document.getElementById('editor').focus(), 100);
+}
+function selectReader(btn) {
+  document.querySelectorAll('.reader-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active'); currentReader = btn.dataset.reader;
+}
+function selectReaderByName(name) {
+  currentReader = name;
+  document.querySelectorAll('.reader-chip').forEach(c => c.classList.toggle('active', c.dataset.reader === name));
+}
+function execCmd(cmd) { document.getElementById('editor').focus(); document.execCommand(cmd, false, null); }
+function insertQuote() {
+  const editor = document.getElementById('editor'); editor.focus();
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    const bq = document.createElement('blockquote');
+    bq.style.cssText = 'border-left:3px solid var(--accent2);margin:8px 0;padding:4px 12px;color:var(--text2);font-style:italic;';
+    bq.textContent = range.toString() || '引用文字';
+    range.deleteContents(); range.insertNode(bq);
+  }
+}
+function triggerImgPick() { document.getElementById('img-input').click(); }
+function triggerCamera() { document.getElementById('camera-input').click(); }
+function handleImgPick(e) {
+  Array.from(e.target.files).forEach(file => {
+    const fr = new FileReader();
+    fr.onload = ev => insertImage(ev.target.result);
+    fr.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+function insertImage(dataUrl) {
+  const editor = document.getElementById('editor'); editor.focus();
+  const img = document.createElement('img'); img.src = dataUrl; img.style.maxWidth = '100%';
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0); range.collapse(false); range.insertNode(img);
+    range.setStartAfter(img); range.setEndAfter(img); sel.removeAllRanges(); sel.addRange(range);
+  } else { editor.appendChild(img); }
+  const br = document.createElement('br'); img.parentNode.insertBefore(br, img.nextSibling);
+}
+
+async function saveDraft() {
+  const title = document.getElementById('title-input').value.trim();
+  const body = document.getElementById('editor').innerHTML.trim();
+  if (!body && !title) { showToast('日记是空的'); return; }
+  const id = currentDiaryId || ('d_' + Date.now()); currentDiaryId = id;
+  await dbPut('diaries', { id, title, body, reader: currentReader, createdAt: Date.now(), isDraft: true, aiResponse: null });
+  showToast('草稿已保存');
+}
+
+async function submitDiary() {
+  const title = document.getElementById('title-input').value.trim();
+  const body = document.getElementById('editor').innerHTML.trim();
+  if (!body && !title) { showToast('还什么都没写呢'); return; }
+  const id = currentDiaryId || ('d_' + Date.now()); currentDiaryId = id;
+  const diary = { id, title, body, reader: currentReader, createdAt: Date.now(), isDraft: false, aiResponse: null, aiLedger: null, aiPlans: null, ledgerExtracted: false, plansExtracted: false };
+  await dbPut('diaries', diary);
+  openDiary(id, diary);
+}
+
+// ===== DETAIL + AI =====
+async function openDiary(id, preloaded) {
+  const diary = preloaded || await dbGet('diaries', id);
+  if (!diary) return; currentDiaryId = id;
+  document.getElementById('detail-date').textContent = formatDateFull(diary.createdAt);
+  document.getElementById('detail-title').textContent = diary.title || '无标题';
+  document.getElementById('detail-body').innerHTML = diary.body;
+  showView('detail');
+
+  const section = document.getElementById('ai-section');
+  section.innerHTML = '';
+
+  if (diary.isDraft) return;
+
+  const apiKey = settings.apiKey || '';
+  const r = READERS[diary.reader] || READERS.nuanjiang;
+
+  // card 1: reader response
+  const card1 = createAICard('reader', r.icon, '', r.name, r.role, '');
+  section.appendChild(card1);
+
+  if (diary.aiResponse) {
+    card1.querySelector('.ai-body').textContent = diary.aiResponse;
+  } else if (apiKey) {
+    card1.querySelector('.ai-body').innerHTML = loadingHTML();
+    try {
+      const resp = await fetchReaderResponse(diary, r, apiKey);
+      card1.querySelector('.ai-body').textContent = resp;
+      diary.aiResponse = resp; await dbPut('diaries', diary);
+    } catch(e) { card1.querySelector('.ai-body').innerHTML = `<span style="color:#c0705a;font-size:13px;">获取失败：${e.message}</span>`; }
+  } else {
+    card1.querySelector('.ai-body').innerHTML = `<span style="color:var(--text3);font-size:13px;">在设置里填写 API Key 后可获得读者回应。</span>`;
+  }
+
+  // card 2: ledger extract
+  const card2 = createAICard('ledger', '💰', 'green', '识别到的消费', '来自日记正文', '');
+  section.appendChild(card2);
+
+  if (diary.ledgerExtracted) {
+    renderLedgerExtract(card2, diary, true);
+  } else if (apiKey) {
+    card2.querySelector('.ai-body').innerHTML = loadingHTML();
+    try {
+      const items = await fetchExtract(diary, apiKey, 'ledger');
+      diary.aiLedger = items; diary.ledgerExtracted = false;
+      await dbPut('diaries', diary);
+      renderLedgerExtract(card2, diary, false);
+    } catch(e) {
+      card2.querySelector('.ai-body').innerHTML = items => `<span style="color:var(--text3);font-size:13px;">未识别到消费记录。</span>`;
+      card2.querySelector('.ai-body').innerHTML = `<span style="color:var(--text3);font-size:13px;">未识别到消费记录。</span>`;
+    }
+  } else {
+    card2.querySelector('.ai-body').innerHTML = `<span style="color:var(--text3);font-size:13px;">填写 API Key 后可自动识别消费。</span>`;
+  }
+
+  // card 3: plans extract
+  const card3 = createAICard('plans', '📋', 'blue', '识别到的计划', '来自日记正文', '');
+  section.appendChild(card3);
+
+  if (diary.plansExtracted) {
+    renderPlansExtract(card3, diary, true);
+  } else if (apiKey) {
+    card3.querySelector('.ai-body').innerHTML = loadingHTML();
+    try {
+      const items = await fetchExtract(diary, apiKey, 'plans');
+      diary.aiPlans = items; diary.plansExtracted = false;
+      await dbPut('diaries', diary);
+      renderPlansExtract(card3, diary, false);
+    } catch(e) {
+      card3.querySelector('.ai-body').innerHTML = `<span style="color:var(--text3);font-size:13px;">未识别到计划事项。</span>`;
+    }
+  } else {
+    card3.querySelector('.ai-body').innerHTML = `<span style="color:var(--text3);font-size:13px;">填写 API Key 后可自动识别计划。</span>`;
+  }
+}
+
+function createAICard(type, icon, colorClass, title, sub, bodyContent) {
+  const card = document.createElement('div');
+  card.className = 'ai-card';
+  card.innerHTML = `<div class="ai-card-header">
+    <div class="ai-avatar ${colorClass}">${icon}</div>
+    <div>
+      <div class="ai-card-title ${colorClass}">${title}</div>
+      <div class="ai-card-sub">${sub}</div>
+    </div>
+  </div>
+  <div class="ai-body">${bodyContent}</div>`;
+  return card;
+}
+
+function loadingHTML() {
+  return `<div class="ai-loading">正在阅读<div class="dots"><span></span><span></span><span></span></div></div>`;
+}
+
+function renderLedgerExtract(card, diary, alreadyConfirmed) {
+  const body = card.querySelector('.ai-body');
+  const items = diary.aiLedger || [];
+  if (!items.length) { body.innerHTML = `<span style="color:var(--text3);font-size:13px;">日记中未提及消费记录。</span>`; return; }
+  if (alreadyConfirmed) {
+    body.innerHTML = `<div class="extract-done">✓ 已入账 ${items.length} 条</div>`;
+    return;
+  }
+  body.innerHTML = `<div class="extract-list" id="ledger-extract-list">
+    ${items.map((it, i) => `<div class="extract-item">
+      <input type="checkbox" id="le_${i}" checked>
+      <span class="extract-item-text">${escHtml(it.name)}</span>
+      <span class="extract-item-meta">${it.type==='income'?'+':'−'}¥${it.amount}</span>
+    </div>`).join('')}
+  </div>
+  <button class="extract-confirm-btn" onclick="confirmLedger('${diary.id}')">确认入账</button>`;
+}
+
+function renderPlansExtract(card, diary, alreadyConfirmed) {
+  const body = card.querySelector('.ai-body');
+  const items = diary.aiPlans || [];
+  if (!items.length) { body.innerHTML = `<span style="color:var(--text3);font-size:13px;">日记中未提及计划事项。</span>`; return; }
+  if (alreadyConfirmed) {
+    body.innerHTML = `<div class="extract-done">✓ 已添加到计划</div>`;
+    return;
+  }
+  body.innerHTML = `<div class="extract-list" id="plans-extract-list">
+    ${items.map((it, i) => `<div class="extract-item blue-check">
+      <input type="checkbox" id="pe_${i}" checked>
+      <span class="extract-item-text">${escHtml(it.text)}</span>
+    </div>`).join('')}
+  </div>
+  <button class="extract-confirm-btn blue" onclick="confirmPlans('${diary.id}')">加入计划</button>`;
+}
+
+async function confirmLedger(diaryId) {
+  const diary = await dbGet('diaries', diaryId);
+  if (!diary) return;
+  const items = diary.aiLedger || [];
+  const checked = items.filter((_, i) => document.getElementById('le_' + i)?.checked);
+  for (const it of checked) {
+    await dbPut('ledger', { id: 'l_' + Date.now() + '_' + Math.random(), name: it.name, amount: parseFloat(it.amount) || 0, type: it.type || 'expense', date: diary.createdAt, fromDiary: diaryId });
+    await new Promise(r => setTimeout(r, 1)); // avoid id collision
+  }
+  diary.ledgerExtracted = true; await dbPut('diaries', diary);
+  const card = document.querySelector('.ai-section .ai-card:nth-child(2)');
+  if (card) renderLedgerExtract(card, diary, true);
+  showToast(`已入账 ${checked.length} 条`);
+}
+
+async function confirmPlans(diaryId) {
+  const diary = await dbGet('diaries', diaryId);
+  if (!diary) return;
+  const items = diary.aiPlans || [];
+  const checked = items.filter((_, i) => document.getElementById('pe_' + i)?.checked);
+  for (const it of checked) {
+    await dbPut('plans', { id: 'p_' + Date.now() + '_' + Math.random(), text: it.text, done: false, createdAt: Date.now(), fromDiary: diaryId });
+    await new Promise(r => setTimeout(r, 1));
+  }
+  diary.plansExtracted = true; await dbPut('diaries', diary);
+  const card = document.querySelector('.ai-section .ai-card:nth-child(3)');
+  if (card) renderPlansExtract(card, diary, true);
+  showToast(`已添加 ${checked.length} 条计划`);
+}
+
+// ===== AI API =====
+async function fetchReaderResponse(diary, reader, apiKey) {
+  const all = await dbGetAll('diaries');
+  const recent = all.filter(d => d.id !== diary.id && d.aiResponse && !d.isDraft)
+    .sort((a,b) => b.createdAt - a.createdAt).slice(0, 3);
+  let ctx = recent.length ? '\n\n近期日记参考：\n' + recent.map(d => `[${formatDateShort(d.createdAt)}] ${d.title||'无标题'}: ${stripHtml(d.body).slice(0,120)}`).join('\n') : '';
+  const content = `以下是今天的日记：\n\n标题：${diary.title||'无标题'}\n\n${stripHtml(diary.body)}${ctx}`;
+  return callDeepSeek(apiKey, reader.prompt, content, 400, 0.85);
+}
+
+async function fetchExtract(diary, apiKey, type) {
+  const text = stripHtml(diary.body);
+  let systemPrompt, userContent;
+  if (type === 'ledger') {
+    systemPrompt = `你是一个消费记录提取助手。从日记文本中识别出所有明确提到的消费或收入记录。
+输出纯 JSON 数组，每条格式：{"name":"项目名称","amount":数字,"type":"expense或income"}
+只提取有明确金额的记录。如果没有任何记录，返回空数组 []。
+只输出 JSON，不要有任何解释文字。`;
+    userContent = text;
+  } else {
+    systemPrompt = `你是一个计划事项提取助手。从日记文本中识别出所有明确提到的待办事项、计划、打算做的事情。
+输出纯 JSON 数组，每条格式：{"text":"事项描述"}
+只提取明确表达意向的事项（包含"要"、"打算"、"明天"、"下周"、"准备"等词语）。如果没有，返回 []。
+只输出 JSON，不要有任何解释文字。`;
+    userContent = text;
+  }
+  const raw = await callDeepSeek(apiKey, systemPrompt, userContent, 600, 0.3);
+  try {
+    const match = raw.match(/\[[\s\S]*\]/);
+    return match ? JSON.parse(match[0]) : [];
+  } catch { return []; }
+}
+
+async function callDeepSeek(apiKey, system, user, maxTokens, temperature) {
+  const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role:'system', content:system }, { role:'user', content:user }], temperature, max_tokens: maxTokens })
+  });
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
+  const data = await resp.json();
+  return data.choices[0].message.content.trim();
+}
+
+// ===== DELETE DIARY =====
+async function deleteCurrentDiary() {
+  if (!currentDiaryId || !confirm('确认删除这篇日记？')) return;
+  await dbDelete('diaries', currentDiaryId);
+  showToast('已删除'); showView('list');
+}
+
+// ===== LEDGER =====
+function setLedgerType(t) {
+  ledgerAddType = t;
+  document.getElementById('type-expense').classList.toggle('active', t === 'expense');
+  document.getElementById('type-income').classList.toggle('active', t === 'income');
+}
+
+async function addLedgerManual() {
+  const name = document.getElementById('ledger-name-input').value.trim();
+  const amount = parseFloat(document.getElementById('ledger-amount-input').value);
+  if (!name || isNaN(amount) || amount <= 0) { showToast('请填写名称和金额'); return; }
+  await dbPut('ledger', { id: 'l_' + Date.now(), name, amount, type: ledgerAddType, date: Date.now(), fromDiary: null });
+  document.getElementById('ledger-name-input').value = '';
+  document.getElementById('ledger-amount-input').value = '';
+  showToast('已添加'); loadLedger();
+}
+
+async function loadLedger() {
+  const items = (await dbGetAll('ledger')).sort((a,b) => b.date - a.date);
+  const now = new Date();
+  const monthItems = items.filter(it => {
+    const d = new Date(it.date);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  });
+  const expense = monthItems.filter(it => it.type !== 'income').reduce((s,it) => s + it.amount, 0);
+  const income = monthItems.filter(it => it.type === 'income').reduce((s,it) => s + it.amount, 0);
+  document.getElementById('month-expense').textContent = '¥' + expense.toFixed(2);
+  document.getElementById('month-income').textContent = '¥' + income.toFixed(2);
+  const balance = income - expense;
+  const balEl = document.getElementById('month-balance');
+  balEl.textContent = (balance >= 0 ? '+' : '') + '¥' + balance.toFixed(2);
+  balEl.className = 'sc-val ' + (balance >= 0 ? 'green' : 'red');
+
+  const list = document.getElementById('ledger-list');
+  if (!items.length) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><div class="empty-text">还没有账目记录<br>写日记后 AI 会自动识别</div></div>`; return; }
+
+  // group by month
+  const groups = {};
+  items.forEach(it => {
+    const d = new Date(it.date);
+    const key = `${d.getFullYear()}年${d.getMonth()+1}月`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(it);
+  });
+
+  list.innerHTML = Object.entries(groups).map(([month, its]) => `
+    <div class="month-group">
+      <div class="month-label">${month}</div>
+      ${its.map(it => `<div class="ledger-item">
+        <div class="ledger-item-icon ${it.type==='income'?'income':'expense'}">${it.type==='income'?'💹':'💸'}</div>
+        <div class="ledger-item-info">
+          <div class="ledger-item-name">${escHtml(it.name)}</div>
+          <div class="ledger-item-date">${formatDateShort(it.date)} ${it.fromDiary ? '· 来自日记' : ''}</div>
+        </div>
+        <div class="ledger-item-amount ${it.type==='income'?'income':'expense'}">${it.type==='income'?'+':'-'}¥${it.amount.toFixed(2)}</div>
+        <button class="ledger-item-del" onclick="delLedger('${it.id}')">×</button>
+      </div>`).join('')}
+    </div>`).join('');
+}
+
+async function delLedger(id) {
+  await dbDelete('ledger', id); loadLedger();
+}
+
+// ===== PLANS =====
+async function addPlanManual() {
+  const text = document.getElementById('plan-input').value.trim();
+  if (!text) return;
+  await dbPut('plans', { id: 'p_' + Date.now(), text, done: false, createdAt: Date.now(), fromDiary: null });
+  document.getElementById('plan-input').value = '';
+  loadPlans();
+}
+
+async function loadPlans() {
+  const items = (await dbGetAll('plans')).sort((a,b) => a.done - b.done || b.createdAt - a.createdAt);
+  const list = document.getElementById('plan-list');
+  if (!items.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">还没有计划<br>写日记后 AI 会自动识别计划事项</div></div>`;
+    return;
+  }
+  const pending = items.filter(it => !it.done);
+  const done = items.filter(it => it.done);
+  list.innerHTML = `
+    ${pending.length ? `<div class="plan-section"><div class="plan-section-label">待完成 · ${pending.length}</div>${pending.map(it => planItemHTML(it)).join('')}</div>` : ''}
+    ${done.length ? `<div class="plan-section"><div class="plan-section-label">已完成 · ${done.length}</div>${done.map(it => planItemHTML(it)).join('')}</div>` : ''}
+  `;
+}
+
+function planItemHTML(it) {
+  return `<div class="plan-item">
+    <input type="checkbox" ${it.done ? 'checked' : ''} onchange="togglePlan('${it.id}', this.checked)">
+    <div class="plan-item-body">
+      <div class="plan-item-text ${it.done?'done':''}">${escHtml(it.text)}</div>
+      <div class="plan-item-meta">${formatDateShort(it.createdAt)} ${it.fromDiary?'· 来自日记':''}</div>
+    </div>
+    <button class="plan-item-del" onclick="delPlan('${it.id}')">×</button>
+  </div>`;
+}
+
+async function togglePlan(id, done) {
+  const it = await dbGet('plans', id);
+  if (it) { it.done = done; await dbPut('plans', it); loadPlans(); }
+}
+
+async function delPlan(id) {
+  await dbDelete('plans', id); loadPlans();
+}
+
+// ===== SETTINGS =====
+async function loadSettings() {
+  const apiKeyRec = await dbGet('settings', 'apiKey');
+  const defaultReaderRec = await dbGet('settings', 'defaultReader');
+  settings.apiKey = apiKeyRec?.value || '';
+  settings.defaultReader = defaultReaderRec?.value || 'nuanjiang';
+  document.getElementById('api-key-input').value = settings.apiKey;
+  document.querySelectorAll('.reader-option').forEach(el => el.classList.toggle('active', el.dataset.reader === settings.defaultReader));
+}
+
+function setDefaultReader(el) {
+  document.querySelectorAll('.reader-option').forEach(e => e.classList.remove('active'));
+  el.classList.add('active'); settings.defaultReader = el.dataset.reader;
+  dbPut('settings', { key: 'defaultReader', value: settings.defaultReader });
+  showToast('默认读者已更新');
+}
+
+document.getElementById('api-key-input').addEventListener('change', async e => {
+  settings.apiKey = e.target.value.trim();
+  await dbPut('settings', { key: 'apiKey', value: settings.apiKey });
+  showToast('API Key 已保存');
+});
+
+async function exportDiaries() {
+  const all = await dbGetAll('diaries');
+  if (!all.length) { showToast('还没有日记'); return; }
+  const text = all.sort((a,b) => a.createdAt - b.createdAt).map(d => [
+    `# ${d.title || '无标题'}`, `日期：${formatDateFull(d.createdAt)}`, `读者：${READERS[d.reader]?.name || d.reader}`,
+    '', stripHtml(d.body),
+    d.aiResponse ? `\n--- 读者回应 ---\n${d.aiResponse}` : ''
+  ].join('\n')).join('\n\n---\n\n');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = '我的日记.txt'; a.click();
+  URL.revokeObjectURL(url); showToast('导出成功');
+}
+
+async function confirmClearAll() {
+  if (!confirm('确认清除所有数据？')) return;
+  for (const store of ['diaries','ledger','plans']) {
+    const all = await dbGetAll(store);
+    for (const it of all) await dbDelete(store, it.id);
+  }
+  showToast('已清除'); loadDiaryList();
+}
+
+// ===== UTILS =====
+function stripHtml(h) { const t = document.createElement('div'); t.innerHTML = h; return t.textContent || ''; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function formatDateFull(ts) {
+  const d = new Date(ts), w = ['日','一','二','三','四','五','六'];
+  return `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日 · 星期${w[d.getDay()]}`;
+}
+function formatDateShort(ts) { const d = new Date(ts); return `${d.getMonth()+1}/${d.getDate()}`; }
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+document.getElementById('topbar-title').addEventListener('click', () => {
+  if (['write','detail'].includes(currentView)) showView('list');
+});
+
+// ===== INIT =====
+openDB().then(async () => {
+  await loadSettings();
+  loadDiaryList();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+});
+</script>
+</body>
+</html>
