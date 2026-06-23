@@ -196,6 +196,38 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .autosave-indicator{font-size:11px;color:var(--green);opacity:0;transition:opacity .25s;margin-left:8px;white-space:nowrap;}
 .autosave-indicator.show{opacity:1;}
+
+/* chat */
+.chat-section{border-top:1px solid var(--border);padding:14px 0 0;margin-top:10px;}
+.chat-section-title{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.chat-msgs{display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;padding:0 2px;}
+.chat-msg{max-width:84%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.6;word-break:break-word;animation:fadeUp .25s;}
+.chat-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:6px;}
+.chat-msg.assistant{align-self:flex-start;background:var(--card);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:6px;}
+.chat-input-row{display:flex;gap:8px;margin-top:10px;align-items:center;}
+.chat-inline-input{flex:1;border:1px solid var(--border);border-radius:20px;padding:10px 16px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;}
+.chat-inline-input:focus{border-color:var(--accent2);}
+.chat-send-btn{width:38px;height:38px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chat-send-btn:active{background:#a86e48;}
+.chat-send-btn:disabled{background:var(--bg3);}
+.chat-typing{display:flex;gap:4px;padding:10px 14px;}
+.chat-typing span{width:6px;height:6px;background:var(--accent2);border-radius:50%;animation:chatDot 1.4s infinite;}
+.chat-typing span:nth-child(2){animation-delay:.2s;}
+.chat-typing span:nth-child(3){animation-delay:.4s;}
+@keyframes chatDot{0%,80%,100%{opacity:.2;transform:scale(.8);}40%{opacity:1;transform:scale(1.1);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.chat-welcome{font-size:13px;color:var(--text3);text-align:center;padding:24px 16px;line-height:1.7;}
+.chat-hint{font-size:12px;color:var(--text3);text-align:center;padding:8px 0;}
+
+/* global chat view */
+.chat-view-inner{display:flex;flex-direction:column;height:calc(100vh - 57px - 64px);padding:8px 16px 0;}
+.chat-view-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px 12px;}
+.chat-view-input-wrap{display:flex;gap:8px;padding:12px 0;border-top:1px solid var(--border);align-items:center;background:var(--bg);}
+.chat-view-input{flex:1;border:1px solid var(--border);border-radius:20px;padding:10px 16px;font-size:14px;background:var(--card);color:var(--text);outline:none;font-family:inherit;}
+.chat-view-input:focus{border-color:var(--accent2);}
+.chat-view-send{width:38px;height:38px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chat-view-send:active{background:#a86e48;}
+.chat-view-send:disabled{background:var(--bg3);}
 </style>
 </head>
 <body>
@@ -276,6 +308,14 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <div class="detail-title" id="detail-title"></div>
     <div class="detail-body" id="detail-body"></div>
     <div class="ai-section" id="ai-section"></div>
+    <div class="chat-section" id="diary-chat-section" style="display:none;">
+      <div class="chat-section-title">💬 聊聊这篇日记</div>
+      <div class="chat-msgs" id="diary-chat-msgs"></div>
+      <div class="chat-input-row">
+        <input class="chat-inline-input" id="diary-chat-input" placeholder="想问这篇日记的什么？" maxlength="500" onkeydown="if(event.key==='Enter')diaryChatSend()">
+        <button class="chat-send-btn" id="diary-chat-send-btn" onclick="diaryChatSend()">↑</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -314,6 +354,19 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
   </div>
 </div>
 
+<!-- AI CHAT GLOBAL -->
+<div class="view" id="view-chat">
+  <div class="chat-view-inner">
+    <div class="chat-view-msgs" id="chat-view-msgs">
+      <div class="chat-welcome">我是你的私人 AI 助手<br>可以问关于日记、账本、计划的任何问题</div>
+    </div>
+    <div class="chat-view-input-wrap">
+      <input class="chat-view-input" id="chat-view-input" placeholder="比如：这周花了多少钱？我最近情绪怎么样？" maxlength="500" onkeydown="if(event.key==='Enter')globalChatSend()">
+      <button class="chat-view-send" id="chat-view-send-btn" onclick="globalChatSend()">↑</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div class="view" id="view-settings">
   <div class="settings-inner">
@@ -345,7 +398,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <div class="settings-section">
       <div class="settings-label">数据</div>
       <div class="settings-card">
-        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.1.0</span></div>
+        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.3.0</span></div>
         <div class="settings-row" style="cursor:pointer;" onclick="exportAllData()">
           <span class="settings-row-label">导出全部数据</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -382,6 +435,10 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     <span>计划</span>
   </button>
+  <button class="nav-item" id="nav-chat" onclick="showView('chat')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>AI问答</span>
+  </button>
   <button class="nav-item" id="nav-settings" onclick="showView('settings')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     <span>设置</span>
@@ -396,7 +453,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
 <script>
 // ===== DB =====
 let db;
-const DB_NAME = 'diary_db', DB_VER = 2;
+const DB_NAME = 'diary_db', DB_VER = 3;
 
 function openDB() {
   return new Promise((res, rej) => {
@@ -410,6 +467,7 @@ function openDB() {
       if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
       if (!d.objectStoreNames.contains('ledger')) d.createObjectStore('ledger', { keyPath: 'id' });
       if (!d.objectStoreNames.contains('plans')) d.createObjectStore('plans', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('chat_messages')) d.createObjectStore('chat_messages', { keyPath: 'id' });
     };
     req.onsuccess = e => { db = e.target.result; res(db); };
     req.onerror = () => rej(req.error);
@@ -448,12 +506,13 @@ function showView(name) {
   const nav = document.getElementById('nav-' + name);
   if (nav) nav.classList.add('active');
   currentView = name;
-  const titles = { list:'我的日记', write:'写日记', detail:'日记', ledger:'账本', plans:'计划', settings:'设置' };
+  const titles = { list:'我的日记', write:'写日记', detail:'日记', ledger:'账本', plans:'计划', settings:'设置', chat:'AI问答' };
   document.getElementById('topbar-title').textContent = titles[name] || '日记';
   if (name === 'list') loadDiaryList();
   if (name === 'settings') loadSettings();
   if (name === 'ledger') loadLedger();
   if (name === 'plans') loadPlans();
+  if (name === 'chat') loadGlobalChat();
 }
 
 // ===== LIST =====
@@ -670,6 +729,8 @@ async function openDiary(id, preloaded) {
   } else {
     card3.querySelector('.ai-body').innerHTML = `<span style="color:var(--text3);font-size:13px;">填写 API Key 后可自动识别计划。</span>`;
   }
+
+  renderDiaryChat(diary);
 }
 
 function createAICard(type, icon, colorClass, title, sub, bodyContent) {
@@ -797,6 +858,193 @@ async function callDeepSeek(apiKey, system, user, maxTokens, temperature) {
   if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
   const data = await resp.json();
   return data.choices[0].message.content.trim();
+}
+
+// ===== CHAT (multi-turn) =====
+async function callDeepSeekMulti(apiKey, messages, maxTokens, temperature) {
+  const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'deepseek-chat', messages, temperature, max_tokens: maxTokens })
+  });
+  if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
+  const data = await resp.json();
+  return data.choices[0].message.content.trim();
+}
+
+// ===== GLOBAL CHAT =====
+async function loadGlobalChat() {
+  const msgs = (await dbGetAll('chat_messages')).sort((a, b) => a.timestamp - b.timestamp);
+  const el = document.getElementById('chat-view-msgs');
+  if (!msgs.length) {
+    el.innerHTML = '<div class="chat-welcome">我是你的私人 AI 助手<br>可以问关于日记、账本、计划的任何问题</div>';
+    return;
+  }
+  el.innerHTML = msgs.map(m => chatBubble(m.role, m.content)).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function globalChatSend() {
+  const input = document.getElementById('chat-view-input');
+  const btn = document.getElementById('chat-view-send-btn');
+  const text = input.value.trim();
+  if (!text) return;
+  const apiKey = settings.apiKey;
+  if (!apiKey) { showToast('请先在设置里填写 API Key'); return; }
+
+  input.value = ''; input.disabled = true; btn.disabled = true;
+
+  // add user msg
+  const userMsg = { id: 'cm_' + Date.now(), role: 'user', content: text, timestamp: Date.now() };
+  await dbPut('chat_messages', userMsg);
+
+  // render
+  const el = document.getElementById('chat-view-msgs');
+  const welcome = el.querySelector('.chat-welcome');
+  if (welcome) welcome.remove();
+  el.insertAdjacentHTML('beforeend', chatBubble('user', text));
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg assistant'; typing.innerHTML = '<div class="chat-typing"><span></span><span></span><span></span></div>';
+  el.appendChild(typing);
+  el.scrollTop = el.scrollHeight;
+
+  try {
+    const context = await buildGlobalContext();
+    const allMsgs = await dbGetAll('chat_messages');
+    const history = allMsgs.sort((a, b) => a.timestamp - b.timestamp).slice(-20);
+    const messages = [
+      { role: 'system', content: `你是用户的私人日记 AI 助手。用户写了一段时间的日记，你可以根据日记内容回答关于他生活、情绪、消费、计划等问题。
+回答时引用具体的日记日期或内容，表现出你对他的了解。语气温暖、自然、简洁。
+以下是用户的当前数据：
+${context}
+如果用户的问题与以上数据无关，就根据常识回答。保持中文。` },
+      ...history.map(m => ({ role: m.role, content: m.content }))
+    ];
+    const resp = await callDeepSeekMulti(apiKey, messages, 600, 0.8);
+    typing.remove();
+    const aiMsg = { id: 'cm_' + (Date.now() + 1), role: 'assistant', content: resp, timestamp: Date.now() + 1 };
+    await dbPut('chat_messages', aiMsg);
+    el.insertAdjacentHTML('beforeend', chatBubble('assistant', resp));
+    el.scrollTop = el.scrollHeight;
+  } catch (e) {
+    typing.remove();
+    el.insertAdjacentHTML('beforeend', chatBubble('assistant', '抱歉，出了点问题：' + e.message));
+  }
+  input.disabled = false; btn.disabled = false;
+  input.focus();
+}
+
+async function buildGlobalContext() {
+  const diaries = (await dbGetAll('diaries')).filter(d => !d.isDraft).sort((a, b) => b.createdAt - a.createdAt);
+  const ledgerItems = await dbGetAll('ledger');
+  const plans = await dbGetAll('plans');
+
+  let ctx = '';
+
+  // diary summaries (last 40)
+  if (diaries.length) {
+    ctx += '【日记列表（最近40篇）】\n';
+    diaries.slice(0, 40).forEach(d => {
+      const preview = stripHtml(d.body).slice(0, 200);
+      ctx += `- [${formatDateShort(d.createdAt)}] ${d.title||'无标题'}：${preview}\n`;
+    });
+    ctx += `共 ${diaries.length} 篇日记\n\n`;
+  }
+
+  // ledger summary (current month)
+  if (ledgerItems.length) {
+    const now = new Date();
+    const monthItems = ledgerItems.filter(it => {
+      const d = new Date(it.date);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    });
+    const expense = monthItems.filter(it => it.type !== 'income').reduce((s, it) => s + it.amount, 0);
+    const income = monthItems.filter(it => it.type === 'income').reduce((s, it) => s + it.amount, 0);
+    ctx += `【本月收支】支出 ¥${expense.toFixed(2)}，收入 ¥${income.toFixed(2)}\n`;
+    if (monthItems.length) {
+      ctx += '本月明细：' + monthItems.map(it => `${it.name} ${it.type==='income'?'+':'-'}¥${it.amount}`).join('、') + '\n';
+    }
+    ctx += '\n';
+  }
+
+  // pending plans
+  const pending = plans.filter(p => !p.done);
+  if (pending.length) {
+    ctx += `【待完成计划（${pending.length}条）】\n`;
+    pending.forEach(p => ctx += `- ${p.text}\n`);
+  }
+
+  return ctx || '暂无数据';
+}
+
+function chatBubble(role, content) {
+  return `<div class="chat-msg ${role}">${content}</div>`;
+}
+
+// ===== DIARY CHAT =====
+function renderDiaryChat(diary) {
+  const section = document.getElementById('diary-chat-section');
+  const msgsEl = document.getElementById('diary-chat-msgs');
+  const history = diary.chatHistory || [];
+  if (history.length) {
+    msgsEl.innerHTML = history.map(m => chatBubble(m.role, m.content)).join('');
+  } else {
+    msgsEl.innerHTML = '<div class="chat-hint">你可以追问 AI 读者关于这篇日记的任何问题</div>';
+  }
+  section.style.display = 'block';
+}
+
+async function diaryChatSend() {
+  const input = document.getElementById('diary-chat-input');
+  const btn = document.getElementById('diary-chat-send-btn');
+  const text = input.value.trim();
+  if (!text || !currentDiaryId) return;
+  const apiKey = settings.apiKey;
+  if (!apiKey) { showToast('请先在设置里填写 API Key'); return; }
+
+  input.value = ''; input.disabled = true; btn.disabled = true;
+
+  const diary = await dbGet('diaries', currentDiaryId);
+  if (!diary) return;
+
+  // init chatHistory
+  if (!diary.chatHistory) diary.chatHistory = [];
+  diary.chatHistory.push({ role: 'user', content: text, timestamp: Date.now() });
+
+  const msgsEl = document.getElementById('diary-chat-msgs');
+  msgsEl.querySelector('.chat-hint')?.remove();
+  msgsEl.insertAdjacentHTML('beforeend', chatBubble('user', text));
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg assistant'; typing.innerHTML = '<div class="chat-typing"><span></span><span></span><span></span></div>';
+  msgsEl.appendChild(typing);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  try {
+    const body = stripHtml(diary.body);
+    const messages = [
+      { role: 'system', content: `你是一个贴心、有洞察力的 AI 读者。用户写了一篇日记，现在想跟你聊聊这篇日记。
+请根据日记内容回答用户的问题，语气温柔自然，像朋友聊天。
+日记如下：
+---
+标题：${diary.title||'无标题'}
+${body}
+---
+${diary.aiResponse ? '你之前读过这篇日记后的回应：' + diary.aiResponse : ''}` },
+      ...(diary.chatHistory || []).slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: text }
+    ];
+    const resp = await callDeepSeekMulti(apiKey, messages, 500, 0.85);
+    typing.remove();
+    diary.chatHistory.push({ role: 'assistant', content: resp, timestamp: Date.now() });
+    await dbPut('diaries', diary);
+    msgsEl.insertAdjacentHTML('beforeend', chatBubble('assistant', resp));
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  } catch (e) {
+    typing.remove();
+    msgsEl.insertAdjacentHTML('beforeend', chatBubble('assistant', '抱歉，出了点问题：' + e.message));
+  }
+  input.disabled = false; btn.disabled = false;
+  input.focus();
 }
 
 // ===== DELETE DIARY =====
@@ -941,19 +1189,20 @@ async function exportAllData() {
   const diaries = await dbGetAll('diaries');
   const ledger = await dbGetAll('ledger');
   const plans = await dbGetAll('plans');
+  const chatMessages = await dbGetAll('chat_messages');
   const settingsAll = await dbGetAll('settings');
   const data = {
-    version: '2.1',
+    version: '2.3',
     exportedAt: new Date().toISOString(),
-    counts: { diaries: diaries.length, ledger: ledger.length, plans: plans.length },
-    diaries, ledger, plans, settings: settingsAll
+    counts: { diaries: diaries.length, ledger: ledger.length, plans: plans.length, chatMessages: chatMessages.length },
+    diaries, ledger, plans, chat_messages: chatMessages, settings: settingsAll
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const ts = new Date().toISOString().slice(0,10);
   const a = document.createElement('a'); a.href = url; a.download = `日记备份_${ts}.json`; a.click();
   URL.revokeObjectURL(url);
-  showToast(`导出完成 · ${diaries.length}篇日记 ${ledger.length}笔账 ${plans.length}条计划`);
+  showToast(`导出完成 · ${diaries.length}篇日记 ${ledger.length}笔账 ${plans.length}条计划 ${chatMessages.length}条对话`);
 }
 
 function triggerImport() { document.getElementById('import-input').click(); }
@@ -965,11 +1214,11 @@ async function handleImport(e) {
   try {
     const raw = await file.text();
     const data = JSON.parse(raw);
-    if (!data.diaries && !data.ledger && !data.plans) { throw new Error('文件格式不正确'); }
-    const msg = `将导入 ${data.diaries?.length||0} 篇日记、${data.ledger?.length||0} 笔账、${data.plans?.length||0} 条计划。\n\n会覆盖现有数据，确认导入？`;
+    if (!data.diaries && !data.ledger && !data.plans && !data.chat_messages) { throw new Error('文件格式不正确'); }
+    const msg = `将导入 ${data.diaries?.length||0} 篇日记、${data.ledger?.length||0} 笔账、${data.plans?.length||0} 条计划、${data.chat_messages?.length||0} 条AI对话。\n\n会覆盖现有数据，确认导入？`;
     if (!confirm(msg)) return;
     // clear old
-    for (const store of ['diaries','ledger','plans','settings']) {
+    for (const store of ['diaries','ledger','plans','chat_messages','settings']) {
       const all = await dbGetAll(store);
       for (const it of all) await dbDelete(store, it.id);
     }
@@ -977,6 +1226,7 @@ async function handleImport(e) {
     if (data.diaries) for (const it of data.diaries) await dbPut('diaries', it);
     if (data.ledger) for (const it of data.ledger) await dbPut('ledger', it);
     if (data.plans) for (const it of data.plans) await dbPut('plans', it);
+    if (data.chat_messages) for (const it of data.chat_messages) await dbPut('chat_messages', it);
     if (data.settings) for (const it of data.settings) await dbPut('settings', it);
     showToast(`导入完成 · 请刷新页面`);
     await loadSettings();
@@ -987,7 +1237,7 @@ async function handleImport(e) {
 
 async function confirmClearAll() {
   if (!confirm('确认清除所有数据？')) return;
-  for (const store of ['diaries','ledger','plans']) {
+  for (const store of ['diaries','ledger','plans','chat_messages']) {
     const all = await dbGetAll(store);
     for (const it of all) await dbDelete(store, it.id);
   }
