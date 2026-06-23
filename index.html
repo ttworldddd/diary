@@ -194,6 +194,8 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
 #img-input,#camera-input{display:none;}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(60,35,15,.85);color:white;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.autosave-indicator{font-size:11px;color:var(--green);opacity:0;transition:opacity .25s;margin-left:8px;white-space:nowrap;}
+.autosave-indicator.show{opacity:1;}
 </style>
 </head>
 <body>
@@ -226,6 +228,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
   <div class="write-inner">
     <div class="write-meta">
       <span class="write-date" id="write-date"></span>
+      <span class="autosave-indicator" id="autosave-indicator">已保存 ✓</span>
       <div class="reader-picker">
         <button class="reader-chip active" data-reader="nuanjiang" onclick="selectReader(this)">暖姜</button>
         <button class="reader-chip" data-reader="subai" onclick="selectReader(this)">素白</button>
@@ -438,6 +441,7 @@ const READERS = {
 
 // ===== VIEWS =====
 function showView(name) {
+  if (currentView === 'write' && name !== 'write') saveAutoDraftNow();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -486,12 +490,20 @@ async function loadDiaryList() {
 // ===== WRITE =====
 function startNewDiary() {
   currentDiaryId = null;
-  document.getElementById('title-input').value = '';
-  document.getElementById('editor').innerHTML = '';
+  const draft = loadAutoDraft();
+  if (draft) {
+    document.getElementById('title-input').value = draft.title || '';
+    document.getElementById('editor').innerHTML = draft.body || '';
+    selectReaderByName(draft.reader || settings.defaultReader || 'nuanjiang');
+  } else {
+    document.getElementById('title-input').value = '';
+    document.getElementById('editor').innerHTML = '';
+    selectReaderByName(settings.defaultReader || 'nuanjiang');
+  }
   document.getElementById('write-date').textContent = formatDateFull(Date.now());
-  selectReaderByName(settings.defaultReader || 'nuanjiang');
   showView('write');
   setTimeout(() => document.getElementById('editor').focus(), 100);
+  if (draft) showToast('已恢复未完成的草稿');
 }
 function selectReader(btn) {
   document.querySelectorAll('.reader-chip').forEach(c => c.classList.remove('active'));
@@ -543,6 +555,36 @@ async function saveDraft() {
   showToast('草稿已保存');
 }
 
+// ===== AUTO-SAVE (localStorage) =====
+const DRAFT_KEY = 'diary_autosave';
+let autoSaveTimer = null;
+let _autoSaveReady = false;
+
+function loadAutoDraft() {
+  try { const d = JSON.parse(localStorage.getItem(DRAFT_KEY)); return d && (d.title || d.body) ? d : null; }
+  catch { return null; }
+}
+
+function saveAutoDraftNow() {
+  if (currentView !== 'write') return;
+  const title = document.getElementById('title-input')?.value?.trim() || '';
+  const body = document.getElementById('editor')?.innerHTML?.trim() || '';
+  if (!title && !body) { localStorage.removeItem(DRAFT_KEY); return; }
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({ title, body, reader: currentReader, savedAt: Date.now() }));
+  const el = document.getElementById('autosave-indicator');
+  if (el) { el.classList.add('show'); clearTimeout(el._timer); el._timer = setTimeout(() => el.classList.remove('show'), 1500); }
+}
+
+function clearAutoDraft() { localStorage.removeItem(DRAFT_KEY); }
+
+function setupAutoSave() {
+  if (_autoSaveReady) return;
+  _autoSaveReady = true;
+  autoSaveTimer = setInterval(saveAutoDraftNow, 4000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveAutoDraftNow(); });
+  window.addEventListener('beforeunload', saveAutoDraftNow);
+}
+
 async function submitDiary() {
   const title = document.getElementById('title-input').value.trim();
   const body = document.getElementById('editor').innerHTML.trim();
@@ -550,6 +592,7 @@ async function submitDiary() {
   const id = currentDiaryId || ('d_' + Date.now()); currentDiaryId = id;
   const diary = { id, title, body, reader: currentReader, createdAt: Date.now(), isDraft: false, aiResponse: null, aiLedger: null, aiPlans: null, ledgerExtracted: false, plansExtracted: false };
   await dbPut('diaries', diary);
+  clearAutoDraft();
   openDiary(id, diary);
 }
 
@@ -972,6 +1015,7 @@ document.getElementById('topbar-title').addEventListener('click', () => {
 openDB().then(async () => {
   await loadSettings();
   loadDiaryList();
+  setupAutoSave();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 });
 </script>
