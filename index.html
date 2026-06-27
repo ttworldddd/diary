@@ -58,8 +58,8 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
 .empty-text{font-size:15px;text-align:center;line-height:1.7;}
 
 /* write */
-#view-write{padding:0;}
-.write-inner{display:flex;flex-direction:column;flex:1;padding:20px 20px 0;}
+#view-write{padding:0;overflow-y:auto;flex:1;min-height:0;}
+.write-inner{display:flex;flex-direction:column;flex:1;min-height:0;padding:20px 20px 0;}
 .write-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 .write-date{font-size:13px;color:var(--text3);}
 .reader-picker{display:flex;gap:8px;}
@@ -398,7 +398,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <div class="settings-section">
       <div class="settings-label">数据</div>
       <div class="settings-card">
-        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.3.0</span></div>
+        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.3.1</span></div>
         <div class="settings-row" style="cursor:pointer;" onclick="exportAllData()">
           <span class="settings-row-label">导出全部数据</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -642,6 +642,24 @@ function setupAutoSave() {
   autoSaveTimer = setInterval(saveAutoDraftNow, 4000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveAutoDraftNow(); });
   window.addEventListener('beforeunload', saveAutoDraftNow);
+
+  // editor scroll-into-view: keep cursor visible while typing
+  const editor = document.getElementById('editor');
+  if (editor) {
+    editor.addEventListener('input', () => {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      if (!range.collapsed) return;
+      const rect = range.getClientRects()[0];
+      if (!rect) return;
+      const container = document.getElementById('view-write');
+      const cr = container.getBoundingClientRect();
+      if (rect.bottom > cr.bottom - 70) {
+        container.scrollTop += (rect.bottom - cr.bottom + 80);
+      }
+    });
+  }
 }
 
 async function submitDiary() {
@@ -651,8 +669,8 @@ async function submitDiary() {
   const id = currentDiaryId || ('d_' + Date.now()); currentDiaryId = id;
   const diary = { id, title, body, reader: currentReader, createdAt: Date.now(), isDraft: false, aiResponse: null, aiLedger: null, aiPlans: null, ledgerExtracted: false, plansExtracted: false };
   await dbPut('diaries', diary);
-  clearAutoDraft();
   openDiary(id, diary);
+  clearAutoDraft();
 }
 
 // ===== DETAIL + AI =====
