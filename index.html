@@ -412,7 +412,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <div class="settings-section">
       <div class="settings-label">数据</div>
       <div class="settings-card">
-        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.4.0</span></div>
+        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.4.1</span></div>
         <div class="settings-row" style="cursor:pointer;" onclick="exportAllData()">
           <span class="settings-row-label">导出全部数据</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1339,11 +1339,27 @@ async function syncPush() {
   };
   const payload = JSON.stringify({ v: '2.4', t: new Date().toISOString(), d: data });
   const b64 = btoa(unescape(encodeURIComponent(payload)));
+  const apiUrl = SYNC_API + '?access_token=' + GITEE_TOKEN;
+  const body = { access_token: GITEE_TOKEN, content: b64, message: 'sync ' + new Date().toLocaleString('zh-CN') };
 
-  const resp = await fetchWithTimeout(SYNC_API, {
-    method: 'PUT',
+  // 先查文件是否存在，获取 sha（Gitee PUT 必须带 sha）
+  let sha = null;
+  try {
+    const getResp = await fetchWithTimeout(apiUrl, { method: 'GET' }, 12000);
+    if (getResp.ok) {
+      const f = await getResp.json();
+      sha = f.sha;
+    }
+    // 404 说明文件还不存在，sha 保持 null，后面用 POST 创建
+  } catch (e) { /* 获取失败也不影响，当首次创建 */ }
+
+  const method = sha ? 'PUT' : 'POST';
+  if (sha) body.sha = sha;
+
+  const resp = await fetchWithTimeout(apiUrl, {
+    method,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ access_token: GITEE_TOKEN, content: b64, message: 'sync ' + new Date().toLocaleString('zh-CN') })
+    body: JSON.stringify(body)
   }, 12000);
 
   if (!resp.ok) {
