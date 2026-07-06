@@ -417,7 +417,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <div class="settings-section">
       <div class="settings-label">数据</div>
       <div class="settings-card">
-        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.5.0</span></div>
+        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.5.1</span></div>
         <div class="settings-row" style="cursor:pointer;" onclick="exportAllData()">
           <span class="settings-row-label">导出全部数据</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1287,7 +1287,7 @@ async function exportAllData() {
   const plans = await dbGetAll('plans');
   const chatMessages = await dbGetAll('chat_messages');
   const settingsAll = await dbGetAll('settings');
-  const safeSettings = settingsAll.filter(s => !['giteeToken','syncPassword'].includes(s.key));
+  const safeSettings = settingsAll.filter(s => !['giteeToken','syncPassword','apiKey'].includes(s.key));
   const data = {
     version: '2.5',
     exportedAt: new Date().toISOString(),
@@ -1423,7 +1423,7 @@ async function syncPush() {
     ledger: await dbGetAll('ledger'),
     plans: await dbGetAll('plans'),
     chat_messages: await dbGetAll('chat_messages'),
-    settings: (await dbGetAll('settings')).filter(s => !['giteeToken','syncPassword'].includes(s.key))
+    settings: (await dbGetAll('settings')).filter(s => !['giteeToken','syncPassword','apiKey'].includes(s.key))
   };
   const payload = JSON.stringify({ v: '2.5', t: new Date().toISOString(), d: data, enc: true });
   const encrypted = await encryptData(password, payload);
