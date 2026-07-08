@@ -199,12 +199,23 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
 .reader-option .ro-desc{font-size:11px;color:var(--text3);line-height:1.5;}
 
 /* bottom nav */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--bg);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0);}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 12px;cursor:pointer;color:var(--text3);transition:color .15s;border:none;background:transparent;font-family:inherit;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom,0);}
+.nav-item{flex:1;max-width:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 10px;cursor:pointer;color:var(--text3);transition:color .15s;border:none;background:transparent;font-family:inherit;}
 .nav-item.active{color:var(--accent);}
-.nav-item svg{width:22px;height:22px;margin-bottom:3px;}
+.nav-item svg{width:22px;height:22px;margin-bottom:2px;}
 .nav-item span{font-size:11px;}
-.main-content{padding-bottom:72px;}
+.main-content{padding-bottom:68px;}
+/* FAB */
+.fab{position:fixed;bottom:80px;right:20px;z-index:99;width:52px;height:52px;border-radius:50%;background:var(--accent);color:white;border:none;box-shadow:0 4px 18px rgba(180,100,50,.38);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s,opacity .25s;}
+.fab svg{width:24px;height:24px;}
+.fab:active{transform:scale(.9);}
+.fab.hidden{opacity:0;pointer-events:none;}
+/* detail collapsible */
+.collapse-bar{display:flex;align-items:center;gap:8px;padding:10px 0;cursor:pointer;user-select:none;font-size:13px;font-weight:500;color:var(--text2);border-top:1px solid var(--border);margin-top:8px;}
+.collapse-bar .c-arrow{font-size:10px;transition:transform .2s;color:var(--text3);}
+.collapse-bar.open .c-arrow{transform:rotate(90deg);}
+.collapse-panel{overflow:hidden;transition:max-height .3s ease;max-height:0;}
+.collapse-panel.open{max-height:2000px;}
 #img-input,#camera-input{display:none;}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(60,35,15,.85);color:white;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -326,13 +337,23 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     </div>
     <div class="detail-title" id="detail-title"></div>
     <div class="detail-body" id="detail-body"></div>
-    <div class="ai-section" id="ai-section"></div>
-    <div class="chat-section" id="diary-chat-section" style="display:none;">
+    <div class="collapse-bar open" id="ai-collapse-bar" onclick="toggleCollapse('ai')">
+      <span class="c-arrow">▶</span> AI 读者回应
+    </div>
+    <div class="collapse-panel open" id="ai-collapse-panel">
+      <div class="ai-section" id="ai-section"></div>
+    </div>
+    <div class="collapse-bar" id="chat-collapse-bar" onclick="toggleCollapse('chat')" style="display:none;">
+      <span class="c-arrow">▶</span> 聊聊这篇日记
+    </div>
+    <div class="collapse-panel" id="chat-collapse-panel" style="display:none;">
+      <div class="chat-section" id="diary-chat-section">
       <div class="chat-section-title">💬 聊聊这篇日记</div>
       <div class="chat-msgs" id="diary-chat-msgs"></div>
       <div class="chat-input-row">
         <input class="chat-inline-input" id="diary-chat-input" placeholder="想问这篇日记的什么？" maxlength="500" onkeydown="if(event.key==='Enter')diaryChatSend()">
         <button class="chat-send-btn" id="diary-chat-send-btn" onclick="diaryChatSend()">↑</button>
+      </div>
       </div>
     </div>
   </div>
@@ -417,7 +438,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <div class="settings-section">
       <div class="settings-label">数据</div>
       <div class="settings-card">
-        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.5.1</span></div>
+        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.5.2</span></div>
         <div class="settings-row" style="cursor:pointer;" onclick="exportAllData()">
           <span class="settings-row-label">导出全部数据</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -468,12 +489,8 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
 
 <nav class="bottom-nav">
   <button class="nav-item active" id="nav-list" onclick="showView('list')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M3 15h18M3 3h18M3 21h18"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     <span>日记</span>
-  </button>
-  <button class="nav-item" id="nav-write" onclick="startNewDiary()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-    <span>写日记</span>
   </button>
   <button class="nav-item" id="nav-ledger" onclick="showView('ledger')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -487,11 +504,11 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     <span>AI问答</span>
   </button>
-  <button class="nav-item" id="nav-settings" onclick="showView('settings')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    <span>设置</span>
-  </button>
 </nav>
+
+<button class="fab" id="fab-write" onclick="startNewDiary()" title="写日记">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
 
 <input type="file" id="img-input" accept="image/*" multiple onchange="handleImgPick(event)">
 <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleImgPick(event)">
@@ -556,6 +573,9 @@ function showView(name) {
   currentView = name;
   const titles = { list:'我的日记', write:'写日记', detail:'日记', ledger:'账本', plans:'计划', settings:'设置', chat:'AI问答' };
   document.getElementById('topbar-title').textContent = titles[name] || '日记';
+  // FAB: show on list/ledger/plans, hide on write/detail/settings/chat
+  const fab = document.getElementById('fab-write');
+  fab.classList.toggle('hidden', !['list','ledger','plans'].includes(name));
   if (name === 'list') loadDiaryList();
   if (name === 'settings') loadSettings();
   if (name === 'ledger') loadLedger();
@@ -761,6 +781,11 @@ async function openDiary(id, preloaded) {
 
   const section = document.getElementById('ai-section');
   section.innerHTML = '';
+  // Reset chat collapse
+  document.getElementById('chat-collapse-bar').style.display = 'none';
+  document.getElementById('chat-collapse-panel').style.display = 'none';
+  document.getElementById('chat-collapse-bar').classList.remove('open');
+  document.getElementById('chat-collapse-panel').classList.remove('open');
 
   if (diary.isDraft) return;
 
@@ -1087,6 +1112,21 @@ function renderDiaryChat(diary) {
     msgsEl.innerHTML = '<div class="chat-hint">你可以追问 AI 读者关于这篇日记的任何问题</div>';
   }
   section.style.display = 'block';
+  // Show collapse bar and panel
+  const bar = document.getElementById('chat-collapse-bar');
+  const panel = document.getElementById('chat-collapse-panel');
+  bar.style.display = 'flex';
+  panel.style.display = 'block';
+  // Auto-open
+  bar.classList.add('open');
+  panel.classList.add('open');
+}
+
+function toggleCollapse(id) {
+  const bar = document.getElementById(id + '-collapse-bar');
+  const panel = document.getElementById(id + '-collapse-panel');
+  bar.classList.toggle('open');
+  panel.classList.toggle('open');
 }
 
 async function diaryChatSend() {
