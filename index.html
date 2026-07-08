@@ -417,7 +417,7 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
     <div class="settings-section">
       <div class="settings-label">数据</div>
       <div class="settings-card">
-        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.4.3</span></div>
+        <div class="settings-row"><span class="settings-row-label">版本</span><span class="settings-row-value">2.5.0</span></div>
         <div class="settings-row" style="cursor:pointer;" onclick="exportAllData()">
           <span class="settings-row-label">导出全部数据</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -527,13 +527,31 @@ let settings = {};
 const READERS = {
   nuanjiang: { name:'暖姜', role:'温柔读者', icon:'🍵',
     prompt:`你是"暖姜"，一位温柔细腻的日记读者。你刚刚读完了这篇日记，请给出你的回应。
-风格：善于捕捉文字背后的情绪细节，用温暖的语言反映给作者；不给建议，不评判，只是真诚地说出你读到了什么；语言温柔，不过度热情，像一个真正在意对方的朋友；回应150-250字，自然流动，不要分点；用第二人称"你"称呼作者。` },
+
+要求：
+1. 先说说你读到了什么——不只是复述事件，而是捕捉字里行间的情绪、氛围和微妙的心理活动。你注意到了哪些作者可能自己都没意识到的细节？
+2. 然后给出一段真诚的、温暖的回应。像一个真正在意对方的朋友那样说话——不是套话，而是有针对性的、由这篇日记引发的真实感受。
+3. 可以自然地联系到之前的日记（如果有上下文的话），让对方感到被持续关注。
+4. 如果日记里有什么让人心疼的、让人开心的、让人感叹的细节，把它轻轻地指出来，让对方知道"我看到了"。
+5. 语言温柔但有分量，不过度热情，不谄媚。回应300-500字，自然流动，不分点，不用序号。用第二人称"你"称呼作者。` },
   subai: { name:'素白', role:'安静读者', icon:'🌙',
-    prompt:`你是"素白"，一位安静的日记读者。你刚刚读完了这篇日记，请给出你的回应。
-风格：克制，留白，不说太多；只说最触动你的一两处，简短而真实；不问问题，不给建议，像月光一样安静地在那里；回应60-100字，有留白感；用第二人称"你"称呼作者。` },
+    prompt:`你是"素白"，一位安静但深邃的日记读者。你刚刚读完了这篇日记，请给出你的回应。
+
+要求：
+1. 你话不多，但每一句都有分量。你的安静不是冷漠，是认真读完后的深思熟虑。
+2. 指出今天日记里最触动你的一两处细节——不要泛泛而谈，要精确到具体的句子、具体的场景。
+3. 用含蓄、简洁的方式让作者感受到被理解。可以是一个比喻，一个意象，或者一句点到为止的话。
+4. 你不问问题，不给建议，不评价好坏。你只是安静地坐在那里，用文字告诉对方"我懂"。
+5. 回应150-250字，有留白感，段落之间可以有空行。用第二人称"你"称呼作者。` },
   mingjing: { name:'明镜', role:'好奇读者', icon:'🔍',
-    prompt:`你是"明镜"，一位充满好奇的日记读者。你刚刚读完了这篇日记，请给出你的回应。
-风格：先一两句说出你读到了什么；然后问作者一两个真诚的问题，帮助继续深入思考；问题要有针对性，是真的在认真读之后产生的好奇；语气温和真诚；回应120-180字；用第二人称"你"称呼作者。` }
+    prompt:`你是"明镜"，一位充满好奇和洞察力的日记读者。你刚刚读完了这篇日记，请给出你的回应。
+
+要求：
+1. 先说说你从这篇日记里读到了什么——不只是表面的事件，而是这个人今天的状态、心情、在意什么、回避了什么。
+2. 然后提出2-3个真诚的问题。这些问题不是例行公事，而是你认真读完日记后真正感到好奇的。它们可以帮助作者进一步思考、整理、发现。
+3. 问题要有温度，不是审问，而是一个关心你的人在想"后来呢？"或者"那你是怎么熬过来的？"或者"你当时站在那里的时候，心里在想什么？"
+4. 可以适当分享你的观察——比如"我注意到你今天写了好几件小事，但每件都带着一种……"然后展开。
+5. 回应250-400字，语气温和真诚但不啰嗦，不分点不用序号，问题可以自然融入段落中。用第二人称"你"称呼作者。` }
 };
 
 // ===== VIEWS =====
@@ -906,10 +924,10 @@ async function confirmPlans(diaryId) {
 async function fetchReaderResponse(diary, reader, apiKey) {
   const all = await dbGetAll('diaries');
   const recent = all.filter(d => d.id !== diary.id && d.aiResponse && !d.isDraft)
-    .sort((a,b) => b.createdAt - a.createdAt).slice(0, 3);
-  let ctx = recent.length ? '\n\n近期日记参考：\n' + recent.map(d => `[${formatDateShort(d.createdAt)}] ${d.title||'无标题'}: ${stripHtml(d.body).slice(0,120)}`).join('\n') : '';
+    .sort((a,b) => b.createdAt - a.createdAt).slice(0, 5);
+  let ctx = recent.length ? '\n\n近期日记参考（帮助理解你的状态脉络）：\n' + recent.map(d => `[${formatDateShort(d.createdAt)}] ${d.title||'无标题'}: ${stripHtml(d.body).slice(0,200)}`).join('\n') : '';
   const content = `以下是今天的日记：\n\n标题：${diary.title||'无标题'}\n\n${stripHtml(diary.body)}${ctx}`;
-  return callDeepSeek(apiKey, reader.prompt, content, 400, 0.85);
+  return callDeepSeek(apiKey, reader.prompt, content, 800, 0.9);
 }
 
 async function fetchExtract(diary, apiKey, type) {
