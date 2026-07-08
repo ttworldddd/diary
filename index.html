@@ -1484,8 +1484,16 @@ async function encryptData(plaintext, password) {
   return r;
 }
 async function decryptData(combined, password) {
-  const key = await deriveKey(password, combined.slice(0, 16));
-  const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: combined.slice(16, 28) }, key, combined.slice(28));
+  // Try v2.5.3+ format: salt(16) + IV(12) + ciphertext
+  try {
+    const key = await deriveKey(password, combined.slice(0, 16));
+    const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: combined.slice(16, 28) }, key, combined.slice(28));
+    return new TextDecoder().decode(dec);
+  } catch (e) {}
+  // Fallback v2.5.0 format: IV(12) + ciphertext, fixed salt
+  const fixedSalt = new TextEncoder().encode('diary-sync-salt-v1');
+  const key = await deriveKey(password, fixedSalt);
+  const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: combined.slice(0, 12) }, key, combined.slice(12));
   return new TextDecoder().decode(dec);
 }
 
@@ -1552,7 +1560,7 @@ async function syncPull() {
   const stripped = file.content.replace(/\s/g, '');
   try {
     const binary = Uint8Array.from(atob(stripped), c => c.charCodeAt(0));
-    if (c.password && binary.length > 28) {
+    if (c.password && binary.length > 12) {
       try { raw = await decryptData(binary, c.password); decrypted = true; }
       catch (e) {
         // Try legacy plaintext decode
