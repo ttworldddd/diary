@@ -1548,21 +1548,30 @@ async function syncPull() {
   const file = await resp.json();
   if (!file.content) return null;
 
-  let raw;
+  let raw, decrypted = false;
   const stripped = file.content.replace(/\s/g, '');
   try {
     const binary = Uint8Array.from(atob(stripped), c => c.charCodeAt(0));
     if (c.password && binary.length > 28) {
-      try { raw = await decryptData(binary, c.password); }
-      catch (e) { raw = decodeURIComponent(escape(atob(stripped))); }
+      try { raw = await decryptData(binary, c.password); decrypted = true; }
+      catch (e) {
+        // Try legacy plaintext decode
+        try { raw = decodeURIComponent(escape(atob(stripped))); } catch (e2) {}
+        if (!raw) throw new Error('密码错误，解密失败');
+      }
     } else {
       raw = decodeURIComponent(escape(atob(stripped)));
     }
   } catch (e) {
-    raw = decodeURIComponent(escape(atob(stripped)));
+    if (e.message === '密码错误，解密失败' || e.message.includes('decrypt')) throw e;
+    try { raw = decodeURIComponent(escape(atob(stripped))); } catch (e2) { throw new Error('数据解析失败'); }
   }
 
-  const remote = JSON.parse(raw);
+  let remote;
+  try { remote = JSON.parse(raw); } catch (e) {
+    if (decrypted) throw new Error('数据格式异常');
+    throw new Error('密码错误或数据损坏，无法解析');
+  }
   if (!remote.d) return null;
   return applySyncData(remote.d);
 }
@@ -1598,13 +1607,18 @@ async function doManualSync() {
 
   btn.disabled = true; bar.style.display = 'flex'; dot.className = 'sync-dot busy'; msg.textContent = '正在同步...';
   try {
+    let pullOk = true;
     try { const n = await syncPull(); msg.textContent = n !== null ? ('云端拉取 ' + n + ' 条') : '云端暂无数据'; }
-    catch (e) { msg.textContent = '拉取失败，跳过'; }
-    await new Promise(r => setTimeout(r, 400));
-    msg.textContent = '正在上传...';
-    const ts = await syncPush();
-    dot.className = 'sync-dot ok'; msg.textContent = '同步完成'; st.textContent = formatSyncTime(ts);
-    await loadSettings(); loadDiaryList();
+    catch (e) { msg.textContent = '拉取失败: ' + e.message; pullOk = false; }
+    if (pullOk) {
+      await new Promise(r => setTimeout(r, 400));
+      msg.textContent = '正在上传...';
+      const ts = await syncPush();
+      dot.className = 'sync-dot ok'; msg.textContent = '同步完成'; st.textContent = formatSyncTime(ts);
+      await loadSettings(); loadDiaryList();
+    } else {
+      dot.className = 'sync-dot err'; st.textContent = '拉取失败，上传已跳过';
+    }
   } catch (e) {
     dot.className = 'sync-dot err'; msg.textContent = '失败：' + e.message; st.textContent = '同步失败';
   }
