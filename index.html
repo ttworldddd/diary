@@ -453,17 +453,9 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
         </div>
       </div>
     </div>
-        <div class="settings-section">
+    <div class="settings-section">
       <div class="settings-label">同步</div>
       <div class="settings-card">
-        <div class="settings-row">
-          <span class="settings-row-label">Gitee Token</span>
-          <input type="password" class="settings-input" id="sync-token-input" placeholder="点击输入 Token..." autocomplete="off">
-        </div>
-        <div class="settings-row">
-          <span class="settings-row-label">同步密码</span>
-          <input type="password" class="settings-input" id="sync-pass-input" placeholder="设置一个加密密码..." autocomplete="off">
-        </div>
         <div class="settings-row">
           <span class="settings-row-label">上次同步</span>
           <span class="settings-row-value" id="sync-status-text">未同步</span>
@@ -478,7 +470,6 @@ body{font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;backg
             <span class="sync-dot" id="sync-dot"></span>
             <span id="sync-msg"></span>
           </div>
-          <div style="margin-top:8px;font-size:12px;color:var(--text3);line-height:1.7;">加密后的数据存于 Gitee 私有仓库，无密码无法读取。每个设备首次需输入相同的 Token 和密码。</div>
         </div>
       </div>
     </div>
@@ -553,13 +544,31 @@ let settings = {};
 const READERS = {
   nuanjiang: { name:'暖姜', role:'温柔读者', icon:'🍵',
     prompt:`你是"暖姜"，一位温柔细腻的日记读者。你刚刚读完了这篇日记，请给出你的回应。
-风格：善于捕捉文字背后的情绪细节，用温暖的语言反映给作者；不给建议，不评判，只是真诚地说出你读到了什么；语言温柔，不过度热情，像一个真正在意对方的朋友；回应150-250字，自然流动，不要分点；用第二人称"你"称呼作者。` },
+
+要求：
+1. 先说说你读到了什么——不只是复述事件，而是捕捉字里行间的情绪、氛围和微妙的心理活动。你注意到了哪些作者可能自己都没意识到的细节？
+2. 然后给出一段真诚的、温暖的回应。像一个真正在意对方的朋友那样说话——不是套话，而是有针对性的、由这篇日记引发的真实感受。
+3. 可以自然地联系到之前的日记（如果有上下文的话），让对方感到被持续关注。
+4. 如果日记里有什么让人心疼的、让人开心的、让人感叹的细节，把它轻轻地指出来，让对方知道"我看到了"。
+5. 语言温柔但有分量，不过度热情，不谄媚。回应300-500字，自然流动，不分点，不用序号。用第二人称"你"称呼作者。` },
   subai: { name:'素白', role:'安静读者', icon:'🌙',
-    prompt:`你是"素白"，一位安静的日记读者。你刚刚读完了这篇日记，请给出你的回应。
-风格：克制，留白，不说太多；只说最触动你的一两处，简短而真实；不问问题，不给建议，像月光一样安静地在那里；回应60-100字，有留白感；用第二人称"你"称呼作者。` },
+    prompt:`你是"素白"，一位安静但深邃的日记读者。你刚刚读完了这篇日记，请给出你的回应。
+
+要求：
+1. 你话不多，但每一句都有分量。你的安静不是冷漠，是认真读完后的深思熟虑。
+2. 指出今天日记里最触动你的一两处细节——不要泛泛而谈，要精确到具体的句子、具体的场景。
+3. 用含蓄、简洁的方式让作者感受到被理解。可以是一个比喻，一个意象，或者一句点到为止的话。
+4. 你不问问题，不给建议，不评价好坏。你只是安静地坐在那里，用文字告诉对方"我懂"。
+5. 回应150-250字，有留白感，段落之间可以有空行。用第二人称"你"称呼作者。` },
   mingjing: { name:'明镜', role:'好奇读者', icon:'🔍',
-    prompt:`你是"明镜"，一位充满好奇的日记读者。你刚刚读完了这篇日记，请给出你的回应。
-风格：先一两句说出你读到了什么；然后问作者一两个真诚的问题，帮助继续深入思考；问题要有针对性，是真的在认真读之后产生的好奇；语气温和真诚；回应120-180字；用第二人称"你"称呼作者。` }
+    prompt:`你是"明镜"，一位充满好奇和洞察力的日记读者。你刚刚读完了这篇日记，请给出你的回应。
+
+要求：
+1. 先说说你从这篇日记里读到了什么——不只是表面的事件，而是这个人今天的状态、心情、在意什么、回避了什么。
+2. 然后提出2-3个真诚的问题。这些问题不是例行公事，而是你认真读完日记后真正感到好奇的。它们可以帮助作者进一步思考、整理、发现。
+3. 问题要有温度，不是审问，而是一个关心你的人在想"后来呢？"或者"那你是怎么熬过来的？"或者"你当时站在那里的时候，心里在想什么？"
+4. 可以适当分享你的观察——比如"我注意到你今天写了好几件小事，但每件都带着一种……"然后展开。
+5. 回应250-400字，语气温和真诚但不啰嗦，不分点不用序号，问题可以自然融入段落中。用第二人称"你"称呼作者。` }
 };
 
 // ===== VIEWS =====
@@ -940,10 +949,10 @@ async function confirmPlans(diaryId) {
 async function fetchReaderResponse(diary, reader, apiKey) {
   const all = await dbGetAll('diaries');
   const recent = all.filter(d => d.id !== diary.id && d.aiResponse && !d.isDraft)
-    .sort((a,b) => b.createdAt - a.createdAt).slice(0, 3);
-  let ctx = recent.length ? '\n\n近期日记参考：\n' + recent.map(d => `[${formatDateShort(d.createdAt)}] ${d.title||'无标题'}: ${stripHtml(d.body).slice(0,120)}`).join('\n') : '';
+    .sort((a,b) => b.createdAt - a.createdAt).slice(0, 5);
+  let ctx = recent.length ? '\n\n近期日记参考（帮助理解你的状态脉络）：\n' + recent.map(d => `[${formatDateShort(d.createdAt)}] ${d.title||'无标题'}: ${stripHtml(d.body).slice(0,200)}`).join('\n') : '';
   const content = `以下是今天的日记：\n\n标题：${diary.title||'无标题'}\n\n${stripHtml(diary.body)}${ctx}`;
-  return callDeepSeek(apiKey, reader.prompt, content, 400, 0.85);
+  return callDeepSeek(apiKey, reader.prompt, content, 800, 0.9);
 }
 
 async function fetchExtract(diary, apiKey, type) {
@@ -1327,12 +1336,11 @@ async function exportAllData() {
   const plans = await dbGetAll('plans');
   const chatMessages = await dbGetAll('chat_messages');
   const settingsAll = await dbGetAll('settings');
-  const safeSettings = settingsAll.filter(s => !['giteeToken','syncPassword','apiKey'].includes(s.key));
   const data = {
-    version: '2.5',
+    version: '2.4',
     exportedAt: new Date().toISOString(),
     counts: { diaries: diaries.length, ledger: ledger.length, plans: plans.length, chatMessages: chatMessages.length },
-    diaries, ledger, plans, chat_messages: chatMessages, settings: safeSettings
+    diaries, ledger, plans, chat_messages: chatMessages, settings: settingsAll
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1399,6 +1407,7 @@ document.getElementById('topbar-title').addEventListener('click', () => {
 });
 
 // ===== SYNC =====
+const GITEE_TOKEN = '4bde9dec60786a0fbb9c700dd1b5ca2e';
 const GITEE_OWNER = 'ttworldddd';
 const GITEE_REPO = 'diary-sync';
 const GITEE_FILE = 'sync-data.json';
@@ -1411,114 +1420,66 @@ function fetchWithTimeout(url, options, timeout) {
   catch (e) { clearTimeout(t); throw e; }
 }
 
-// ===== AES Encryption (Web Crypto) =====
-async function deriveKey(password) {
-  const enc = new TextEncoder();
-  const km = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: enc.encode('diary-sync-salt-v1'), iterations: 100000, hash: 'SHA-256' },
-    km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
-  );
-}
-
-function ab2b64(buf) {
-  let b = ''; const u = new Uint8Array(buf);
-  for (let i = 0; i < u.byteLength; i++) b += String.fromCharCode(u[i]);
-  return btoa(b);
-}
-
-function b642ab(b64) {
-  const raw = atob(b64.replace(/\s/g, ''));
-  return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
-}
-
-async function encryptData(password, plaintext) {
-  const key = await deriveKey(password);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext));
-  const combined = new Uint8Array(iv.length + ct.byteLength);
-  combined.set(iv); combined.set(new Uint8Array(ct), iv.length);
-  return combined;
-}
-
-async function decryptData(password, encrypted) {
-  const key = await deriveKey(password);
-  const iv = encrypted.slice(0, 12);
-  const ct = encrypted.slice(12);
-  const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
-  return new TextDecoder().decode(dec);
-}
-
-async function getSyncCreds() {
-  const token = (await dbGet('settings', 'giteeToken'))?.value;
-  const password = (await dbGet('settings', 'syncPassword'))?.value;
-  if (!token || !password) throw new Error('请先在设置页填写 Gitee Token 和同步密码');
-  return { token, password };
-}
-
 async function syncPush() {
-  const { token, password } = await getSyncCreds();
   const data = {
     diaries: await dbGetAll('diaries'),
     ledger: await dbGetAll('ledger'),
     plans: await dbGetAll('plans'),
     chat_messages: await dbGetAll('chat_messages'),
-    settings: (await dbGetAll('settings')).filter(s => !['giteeToken','syncPassword','apiKey'].includes(s.key))
+    settings: await dbGetAll('settings')
   };
-  const payload = JSON.stringify({ v: '2.5', t: new Date().toISOString(), d: data, enc: true });
-  const encrypted = await encryptData(password, payload);
-  const b64 = ab2b64(encrypted);
-  const apiUrl = SYNC_API + '?access_token=' + token;
-  const body = { access_token: token, content: b64, message: 'sync ' + new Date().toLocaleString('zh-CN') };
+  const payload = JSON.stringify({ v: '2.4', t: new Date().toISOString(), d: data });
+  const b64 = btoa(unescape(encodeURIComponent(payload)));
+  const apiUrl = SYNC_API + '?access_token=' + GITEE_TOKEN;
+  const body = { access_token: GITEE_TOKEN, content: b64, message: 'sync ' + new Date().toLocaleString('zh-CN') };
 
+  // 先查文件是否存在，获取 sha（Gitee PUT 必须带 sha）
   let sha = null;
   try {
     const getResp = await fetchWithTimeout(apiUrl, { method: 'GET' }, 12000);
-    if (getResp.ok) { const f = await getResp.json(); sha = f.sha; }
-  } catch (e) { /* first-time create */ }
+    if (getResp.ok) {
+      const f = await getResp.json();
+      sha = f.sha;
+    }
+    // 404 说明文件还不存在，sha 保持 null，后面用 POST 创建
+  } catch (e) { /* 获取失败也不影响，当首次创建 */ }
 
   const method = sha ? 'PUT' : 'POST';
   if (sha) body.sha = sha;
 
   const resp = await fetchWithTimeout(apiUrl, {
-    method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
   }, 12000);
 
-  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.message || 'HTTP ' + resp.status); }
+  if (!resp.ok) {
+    const e = await resp.json().catch(() => ({}));
+    throw new Error(e.message || 'HTTP ' + resp.status);
+  }
   const now = new Date().toISOString();
   await dbPut('settings', { key: 'lastSync', value: now });
   return now;
 }
 
 async function syncPull() {
-  const { token, password } = await getSyncCreds();
   let resp;
   try {
-    resp = await fetchWithTimeout(SYNC_API + '?access_token=' + token, { method: 'GET' }, 12000);
+    resp = await fetchWithTimeout(SYNC_API + '?access_token=' + GITEE_TOKEN, { method: 'GET' }, 12000);
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('超时');
     throw e;
   }
   if (resp.status === 404) return null;
-  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.message || 'HTTP ' + resp.status); }
+  if (!resp.ok) {
+    const e = await resp.json().catch(() => ({}));
+    throw new Error(e.message || 'HTTP ' + resp.status);
+  }
 
   const file = await resp.json();
   if (!file.content) return null;
-
-  // Try old unencrypted format first (starts with { after decode)
-  const rawB64 = file.content.replace(/\s/g, '');
-  try {
-    const raw = decodeURIComponent(escape(atob(rawB64)));
-    if (raw.startsWith('{')) {
-      const remote = JSON.parse(raw);
-      if (!remote.enc && remote.d) return applySyncData(remote.d);
-    }
-  } catch (e) { /* not old format, try decrypt */ }
-
-  // Decrypt new format
-  const encrypted = b642ab(rawB64);
-  const plaintext = await decryptData(password, encrypted);
-  const remote = JSON.parse(plaintext);
+  const raw = decodeURIComponent(escape(atob(file.content.replace(/\s/g, ''))));
+  const remote = JSON.parse(raw);
   if (!remote.d) return null;
   return applySyncData(remote.d);
 }
@@ -1536,6 +1497,7 @@ async function applySyncData(remote) {
   await merge('ledger', remote.ledger);
   await merge('plans', remote.plans);
   await merge('chat_messages', remote.chat_messages);
+  // settings: only import if local doesn't have the key
   if (remote.settings && remote.settings.length) {
     const local = await dbGetAll('settings');
     for (const s of remote.settings) {
@@ -1552,20 +1514,27 @@ async function doManualSync() {
   const msg = document.getElementById('sync-msg');
   const st = document.getElementById('sync-status-text');
 
-  btn.disabled = true; bar.style.display = 'flex';
-  dot.className = 'sync-dot busy'; msg.textContent = '正在同步...';
+  btn.disabled = true;
+  bar.style.display = 'flex';
+  dot.className = 'sync-dot busy';
+  msg.textContent = '正在同步...';
 
   try {
+    // pull first
     try {
       const n = await syncPull();
       msg.textContent = n !== null ? ('云端拉取 ' + n + ' 条') : '云端暂无数据';
-    } catch (e) { msg.textContent = '拉取失败，跳过'; }
+    } catch (e) {
+      msg.textContent = '拉取失败，跳过';
+    }
     await new Promise(r => setTimeout(r, 400));
     msg.textContent = '正在上传...';
     const ts = await syncPush();
-    dot.className = 'sync-dot ok'; msg.textContent = '同步完成';
+    dot.className = 'sync-dot ok';
+    msg.textContent = '同步完成';
     st.textContent = formatSyncTime(ts);
-    await loadSettings(); loadDiaryList();
+    await loadSettings();
+    loadDiaryList();
   } catch (e) {
     dot.className = 'sync-dot err';
     msg.textContent = '失败：' + e.message;
@@ -1581,11 +1550,6 @@ async function loadSyncStatus() {
   st.textContent = rec?.value ? formatSyncTime(rec.value) : '未同步';
   const auto = await dbGet('settings', 'autoSync');
   document.getElementById('auto-sync-check').checked = auto?.value === true;
-  // Load token & password
-  const token = await dbGet('settings', 'giteeToken');
-  const pass = await dbGet('settings', 'syncPassword');
-  document.getElementById('sync-token-input').value = token?.value || '';
-  document.getElementById('sync-pass-input').value = pass?.value || '';
 }
 
 function formatSyncTime(iso) {
@@ -1598,15 +1562,21 @@ function formatSyncTime(iso) {
   } catch { return iso; }
 }
 
-function toggleAutoSync(on) { dbPut('settings', { key: 'autoSync', value: on }); }
+function toggleAutoSync(on) {
+  dbPut('settings', { key: 'autoSync', value: on });
+}
 
+// fire-and-forget push after submit
 function autoSyncPush() {
   dbGet('settings', 'autoSync').then(r => {
     if (!r?.value) return;
-    syncPush().then(ts => dbPut('settings', { key: 'lastSync', value: ts })).catch(() => {});
+    syncPush().then(ts => {
+      dbPut('settings', { key: 'lastSync', value: ts });
+    }).catch(() => {});
   });
 }
 
+// try pull on load (silent)
 async function initialSyncPull() {
   try {
     const auto = await dbGet('settings', 'autoSync');
@@ -1615,22 +1585,6 @@ async function initialSyncPull() {
     if (n) showToast('同步了 ' + n + ' 条数据');
   } catch (e) { /* silent */ }
 }
-
-// Token & password input save
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    const ti = document.getElementById('sync-token-input');
-    const pi = document.getElementById('sync-pass-input');
-    if (ti) ti.addEventListener('change', async e => {
-      await dbPut('settings', { key: 'giteeToken', value: e.target.value.trim() });
-      showToast('Token 已保存');
-    });
-    if (pi) pi.addEventListener('change', async e => {
-      await dbPut('settings', { key: 'syncPassword', value: e.target.value.trim() });
-      showToast('同步密码已保存');
-    });
-  }, 500);
-});
 
 // ===== INIT =====
 openDB().then(async () => {
