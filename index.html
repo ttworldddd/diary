@@ -798,7 +798,6 @@ async function submitDiary() {
   closeWriteView();
   openDiary(id, diary);
   clearAutoDraft();
-  autoSyncPush();
 }
 
 function confirmSubmit() {
@@ -908,6 +907,7 @@ async function openDiary(id, preloaded) {
   }
 
   renderDiaryChat(diary);
+  syncPush().catch(() => {});
 }
 
 function createAICard(type, icon, colorClass, title, sub, bodyContent) {
