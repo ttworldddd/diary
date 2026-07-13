@@ -1497,7 +1497,14 @@ async function decryptData(combined, password) {
   return new TextDecoder().decode(dec);
 }
 
-function fetchWithTimeout(url, options, timeout) {
+function bytesToBase64(bytes) {
+  const bin = new Uint8Array(bytes);
+  let s = '';
+  for (let i = 0; i < bin.length; i += 65535) {
+    s += String.fromCharCode.apply(null, bin.slice(i, i + 65535));
+  }
+  return btoa(s);
+}
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeout || 10000);
   try { return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(t)); }
@@ -1519,7 +1526,7 @@ async function syncPush() {
   let b64;
   if (c.password) {
     const enc = await encryptData(payload, c.password);
-    b64 = btoa(String.fromCharCode(...new Uint8Array(enc)));
+    b64 = bytesToBase64(enc);
   } else {
     b64 = btoa(unescape(encodeURIComponent(payload)));
   }
