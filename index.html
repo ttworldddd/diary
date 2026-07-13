@@ -1505,6 +1505,8 @@ function bytesToBase64(bytes) {
   }
   return btoa(s);
 }
+
+function fetchWithTimeout(url, options, timeout) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeout || 10000);
   try { return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(t)); }
